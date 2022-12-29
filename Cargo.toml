@@ -1,0 +1,27 @@
+[package]
+name = "transformers-onnx-pipelines"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dev-dependencies]
+interoptopus_backend_csharp = "0.14.14"
+interoptopus_backend_c = "0.14.14"
+interoptopus_backend_cpython = "0.14.14"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+interoptopus = "0.14.14"
+onnxruntime = { git = "https://github.com/npc-engine/onnxruntime-rs.git", branch = "feature/multiple-provider-features"}
+onnxruntime-sys = { git = "https://github.com/npc-engine/onnxruntime-rs.git", branch = "feature/multiple-provider-features"}
+tokenizers = "0.13"
+ndarray-linalg = ">0.12.0"
+rand = { version = "0.8.4", features = ["alloc"] }
+
+[features]
+default = ["directml"]
+directml = ["onnxruntime/directml"]
