@@ -39,13 +39,32 @@ Documentation is WIP, refer to Rust documentation for now.
 using EdgeTransformers;
 
 ...
-    var env = EdgeTransformers.Environment.New(); //< -- Failed to load model
-    var condPipelinePkv = ConditionalGenerationPipelineWithPKVs.CreateFromPaths(
-        env.Context, condModelPathPkv, cond_tokenizer_config_p, cond_special_tokens_map_json, DeviceFFI.CPU, GraphOptimizationLevelFFI.Basic);
+    var env = EdgeTransformers.Environment.New();
+    var condPipelinePkv = ConditionalGenerationPipelineWithPKVs.FromPretrained(
+        env.Context, "optimum/gpt2", DeviceFFI.DML, GraphOptimizationLevelFFI.All);
 
     string output = condPipelinePkv.GenerateTopkSampling("Hello world", 10, 5, 0.5f);
 ...
 ```
+
+Batch processing is supported, but is a bit unintuitive and requires StringBatch class.
+
+```csharp
+using EdgeTransformers;
+  ...
+        var env = EdgeTransformers.Environment.New(); //< -- Failed to load model
+        var condPipelinePkv = ConditionalGenerationPipelineWithPKVs.FromPretrained(
+            env.Context, "optimum/gpt2", DeviceFFI.DML, GraphOptimizationLevelFFI.All);
+        var string_batch = StringBatch.New();
+        string_batch.Add("Hello world");
+        string_batch.Add("Hello world");
+
+        var o_batch_pkv = condPipelinePkv.GenerateRandomSamplingBatch(string_batch.Context, 10, 0.5f);
+
+        Debug.LogFormat("Cond generation output 0: {0} 1: {1}", o_batch_pkv[0].ascii_string, o_batch_pkv[1].ascii_string);
+  ...
+```
+
 
 ### C
 
@@ -88,10 +107,10 @@ println!("{}", pipeline.generate(input, 10, &sampler).unwrap());
 
 - [x] C# wrapper
 - [x] C wrapper
-- [ ] Proper CI/CD
+- [ ] Migrate to [ort](https://github.com/pykeio/ort) crate
+- [ ] Proper CI/CD to test and build for more execution providers
 - [ ] C++ wrapper
 - [ ] More pipelines (e.g. extractive QA, ASR, etc.)
-- [ ] More providers
 - [ ] Better huggingface config.json parsing
 
 ## Building ONNX Runtime fork
