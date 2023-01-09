@@ -1,20 +1,16 @@
-use std::cell::{RefCell, RefMut};
-use std::cmp::Ordering;
+use std::cell::RefCell;
 use std::collections::HashMap;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::path::PathBuf;
 
 use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{s, Array, Array1, Array2, ArrayD, Axis, Ix1, Ix2, IxDyn};
-use onnxruntime::session::{Input, Output, Session};
-use onnxruntime::tensor::{FromArray, InputTensor, OrtOwnedTensor};
 use onnxruntime::GraphOptimizationLevel;
+use onnxruntime::ndarray::{Array, Array2, ArrayD, Axis, IxDyn};
+use onnxruntime::session::Session;
+use onnxruntime::tensor::{FromArray, InputTensor};
 
-use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
-use crate::error::{Error, Result};
-use crate::sampling::Sampler;
+use crate::common::Device;
+use crate::error::Result;
 
 /// Onnx inference session wrapper for the conditional generation models.
 pub struct ClassificationModel<'a> {
@@ -93,7 +89,7 @@ impl<'a> ClassificationModel<'a> {
         token_type_ids: Option<Array2<u32>>,
     ) -> Result<ArrayD<f32>> {
         let input_map = self.prepare_input_map(input_ids, attention_mask, token_type_ids)?;
-        let mut input_tensor = match_to_inputs(&self.model_session.borrow().inputs, input_map)?;
+        let input_tensor = match_to_inputs(&self.model_session.borrow().inputs, input_map)?;
         let mut model = self.model_session.borrow_mut();
         let output_names = model
             .outputs
@@ -113,12 +109,12 @@ impl<'a> ClassificationModel<'a> {
             }))
             .collect();
         let logits = output_map.remove("logits").unwrap();
-        let mut exps = logits.mapv(|x| x.exp());
+        let exps = logits.mapv(|x| x.exp());
         let sum = exps
             .sum_axis(Axis(logits.ndim() - 1))
             .insert_axis(Axis(logits.ndim() - 1));
 
-        let mut softmax = exps / sum;
+        let softmax = exps / sum;
         Ok(softmax.into_dimensionality()?)
     }
 

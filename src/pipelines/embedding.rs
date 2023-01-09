@@ -1,25 +1,16 @@
-use std::cell::{RefCell, RefMut};
-use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
+use onnxruntime::GraphOptimizationLevel;
 use onnxruntime::environment::Environment;
 use onnxruntime::ndarray::{
-    concatenate, s, Array, Array1, Array2, ArrayD, ArrayView1, Axis, Ix2, IxDyn,
+    Array1, Array2, Axis,
 };
-use onnxruntime::session::{Input, Output, Session};
-use onnxruntime::tensor::{FromArray, InputTensor, OrtOwnedTensor};
-use onnxruntime::{ndarray, GraphOptimizationLevel};
 
-use crate::common::Device;
-use crate::error::{Error, Result};
-use crate::hf_hub::hf_hub_download;
-use crate::modeling::conditional_generation::ConditionalGenerationModel;
-use crate::sampling::Sampler;
-use crate::tokenizer::AutoTokenizer;
 use crate::{Embedding, EmbeddingModel, PoolingStrategy};
+use crate::common::Device;
+use crate::error::Result;
+use crate::hf_hub::hf_hub_download;
+use crate::tokenizer::AutoTokenizer;
 
 /// Wraps Huggingface Optimum pipeline exported to ONNX with `default` task.
 ///
@@ -212,7 +203,7 @@ impl<'a> EmbeddingPipeline<'a> {
             token_type_ids.concat(),
         )?;
 
-        let mut output =
+        let output =
             self.model
                 .forward(input_ids, Some(attention_mask), Some(token_type_ids))?;
         Ok(output)
@@ -221,8 +212,6 @@ impl<'a> EmbeddingPipeline<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
     use onnxruntime::LoggingLevel;
 
     use super::*;

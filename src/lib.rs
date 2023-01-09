@@ -4,7 +4,6 @@ pub use onnxruntime;
 
 pub use common::*;
 pub use error::*;
-use ffi::*;
 pub use modeling::*;
 pub use pipelines::*;
 pub use sampling::*;

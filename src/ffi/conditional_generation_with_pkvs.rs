@@ -1,26 +1,18 @@
 use std::borrow::Borrow;
-use std::cell::RefCell;
-use std::ffi::{CStr, CString};
-use std::path::{Path, PathBuf};
+use std::ffi::CString;
+use std::path::PathBuf;
 
+use interoptopus::{
+    ffi_service, ffi_service_ctor, ffi_service_method, ffi_type,
+};
 use interoptopus::patterns::slice::FFISlice;
 use interoptopus::patterns::string::AsciiPointer;
-use interoptopus::{
-    ffi_function, ffi_service, ffi_service_ctor, ffi_service_method, ffi_type, function, pattern,
-    Inventory, InventoryBuilder,
-};
-use onnxruntime::ndarray::AssignElem;
-use onnxruntime::{environment::Environment, LoggingLevel};
-use thread_local::ThreadLocal;
 
-use crate::common::Device;
-use crate::error::Error;
+use crate::ConditionalGenerationPipelineWithPKVs;
 use crate::error::Result;
-use crate::ffi::error::FFIError;
-use crate::ffi::UseAsciiStringPattern;
 use crate::ffi::{DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch};
+use crate::ffi::UseAsciiStringPattern;
 use crate::sampling::{ArgmaxSampler, RandomSampler, TopKSampler};
-use crate::{ConditionalGenerationPipeline, ConditionalGenerationPipelineWithPKVs};
 
 #[ffi_type(opaque, name = "ConditionalGenerationPipelineWithPKVs")]
 pub struct ConditionalGenerationPipelineWithPKVsFFI<'a> {
@@ -230,8 +222,6 @@ impl<'a> ConditionalGenerationPipelineWithPKVsFFI<'a> {
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
-
     use super::*;
 
     #[test]

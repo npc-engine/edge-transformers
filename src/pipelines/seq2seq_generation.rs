@@ -1,26 +1,18 @@
-use std::cell::{RefCell, RefMut};
-use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
+use onnxruntime::{GraphOptimizationLevel, ndarray};
 use onnxruntime::environment::Environment;
 use onnxruntime::ndarray::{
-    concatenate, s, Array, Array1, Array2, ArrayD, ArrayView1, Axis, Ix2, IxDyn,
+    Array, Array1, Array2, ArrayView1, Axis, concatenate, Ix2, s,
 };
-use onnxruntime::session::{Input, Output, Session};
-use onnxruntime::tensor::{FromArray, InputTensor, OrtOwnedTensor};
-use onnxruntime::{ndarray, GraphOptimizationLevel};
 use tokenizers::Encoding;
 
 use crate::common::Device;
-use crate::error::{Error, Result};
+use crate::error::Result;
 use crate::hf_hub::hf_hub_download;
-use crate::modeling::conditional_generation::ConditionalGenerationModel;
 use crate::sampling::Sampler;
-use crate::tokenizer::AutoTokenizer;
 use crate::Seq2SeqGenerationModel;
+use crate::tokenizer::AutoTokenizer;
 
 /// Wraps Huggingface AutoModelForCausalLM exported to ONNX with `seq2seq-lm` feature
 /// and pretrained tokenizer into simple text to text generative interface.
@@ -208,8 +200,8 @@ impl<'a> Seq2SeqGenerationPipeline<'a> {
         let mut eos_token_generated = vec![false; encoding.len()];
 
         let enc_tuple = self.enc_vec_to_tensor(encoding);
-        let mut input_ids = enc_tuple.0;
-        let mut attention_mask = enc_tuple.1;
+        let input_ids = enc_tuple.0;
+        let attention_mask = enc_tuple.1;
         let mut type_ids = enc_tuple.2;
 
         let dec_tuple = self.enc_vec_to_tensor(decoder_encoding);
@@ -348,15 +340,13 @@ impl<'a> Seq2SeqGenerationPipeline<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
-    use onnxruntime::environment::Environment;
     use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
+    use onnxruntime::environment::Environment;
 
+    use crate::Seq2SeqGenerationPipeline;
     use crate::common::Device;
     use crate::error::Result;
     use crate::sampling::TopKSampler;
-    use crate::{ConditionalGenerationPipeline, Seq2SeqGenerationPipeline};
 
     #[ignore]
     #[test]

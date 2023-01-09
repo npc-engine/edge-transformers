@@ -1,21 +1,13 @@
-use std::any::Any;
-use std::cell::{RefCell, RefMut};
-use std::cmp::{max, Ordering};
-use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
+use onnxruntime::{GraphOptimizationLevel, ndarray};
 use onnxruntime::environment::Environment;
 use onnxruntime::ndarray::{
-    concatenate, s, Array, Array1, Array2, ArrayD, ArrayView1, Axis, Ix2, IxDyn,
+    Array, Array1, Array2, ArrayView1, Axis, concatenate, s,
 };
-use onnxruntime::session::{Input, Output, Session};
-use onnxruntime::tensor::{FromArray, InputTensor, OrtOwnedTensor};
-use onnxruntime::{ndarray, GraphOptimizationLevel};
 
 use crate::common::Device;
-use crate::error::{Error, Result};
+use crate::error::Result;
 use crate::hf_hub::hf_hub_download;
 use crate::modeling::conditional_generation_with_pkvs::ConditionalGenerationModelWithPKVs;
 use crate::sampling::Sampler;
@@ -273,16 +265,13 @@ impl<'a> ConditionalGenerationPipelineWithPKVs<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
-    use onnxruntime::environment::Environment;
     use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
+    use onnxruntime::environment::Environment;
 
     use crate::common::Device;
     use crate::error::Result;
     use crate::pipelines::conditional_generation_with_pkvs::ConditionalGenerationPipelineWithPKVs;
     use crate::sampling::TopKSampler;
-    use crate::ConditionalGenerationPipeline;
 
     #[test]
     fn test_gen_model() -> Result<()> {

@@ -1,19 +1,15 @@
-use std::cell::{RefCell, RefMut};
-use std::cmp::Ordering;
+use std::cell::RefCell;
 use std::collections::HashMap;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::path::PathBuf;
 
+use onnxruntime::GraphOptimizationLevel;
 use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{s, Array, Array2, Array3, ArrayD, Axis, Ix2, IxDyn};
+use onnxruntime::ndarray::{Array, Array2, Array3, IxDyn};
 use onnxruntime::session::{Input, Output, Session};
-use onnxruntime::tensor::{FromArray, InputTensor, OrtOwnedTensor};
-use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
-use tokenizers::Tokenizer;
+use onnxruntime::tensor::{FromArray, InputTensor};
 
-use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
+use crate::common::Device;
 use crate::error::{Error, Result};
 
 /// Onnx inference session wrapper for the Seq2Seq generation models.
@@ -154,7 +150,7 @@ impl<'a> Seq2SeqGenerationModel<'a> {
             token_type_ids,
             decoder_token_type_ids,
         )?;
-        let mut input_tensor = match_to_inputs(&self.model_session.borrow().inputs, input_map)?;
+        let input_tensor = match_to_inputs(&self.model_session.borrow().inputs, input_map)?;
         let mut model = self.model_session.borrow_mut();
         let output_names: Vec<String> = model
             .outputs

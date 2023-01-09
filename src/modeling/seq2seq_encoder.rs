@@ -1,20 +1,16 @@
-use std::cell::{RefCell, RefMut};
-use std::cmp::Ordering;
+use std::cell::RefCell;
 use std::collections::HashMap;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::path::PathBuf;
 
 use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{s, Array, Array1, Array2, Array3, ArrayD, Axis, Ix1, Ix2, IxDyn};
-use onnxruntime::session::{Input, Output, Session};
-use onnxruntime::tensor::{FromArray, InputTensor, OrtOwnedTensor};
 use onnxruntime::GraphOptimizationLevel;
+use onnxruntime::ndarray::{Array, Array2, Array3, IxDyn};
+use onnxruntime::session::Session;
+use onnxruntime::tensor::{FromArray, InputTensor};
 
-use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
-use crate::error::{Error, Result};
-use crate::sampling::Sampler;
+use crate::common::Device;
+use crate::error::Result;
 
 /// Onnx inference session wrapper for the conditional generation models.
 pub struct Seq2SeqEncoderModel<'a> {
@@ -86,7 +82,7 @@ impl<'a> Seq2SeqEncoderModel<'a> {
         token_type_ids: Option<Array2<u32>>,
     ) -> Result<Array3<f32>> {
         let input_map = self.prepare_input_map(input_ids, attention_mask, token_type_ids)?;
-        let mut input_tensor = match_to_inputs(&self.model_session.borrow().inputs, input_map)?;
+        let input_tensor = match_to_inputs(&self.model_session.borrow().inputs, input_map)?;
         let mut model = self.model_session.borrow_mut();
         let output_names = model
             .outputs
@@ -94,7 +90,7 @@ impl<'a> Seq2SeqEncoderModel<'a> {
             .map(|o| o.name.clone())
             .collect::<Vec<_>>();
         let outputs_tensors = model.run(input_tensor)?;
-        let mut output_map: HashMap<String, Array<f32, IxDyn>> = output_names
+        let output_map: HashMap<String, Array<f32, IxDyn>> = output_names
             .iter()
             .map(|name| name.to_string())
             .zip(outputs_tensors.into_iter().map(|tensor| {

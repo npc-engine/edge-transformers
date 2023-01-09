@@ -1,30 +1,19 @@
-use std::cell::{RefCell, RefMut};
-use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::fmt::format;
-use std::fs;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 use itertools::izip;
-use more_asserts::assert_lt;
+use onnxruntime::GraphOptimizationLevel;
 use onnxruntime::environment::Environment;
 use onnxruntime::ndarray::{
-    concatenate, s, Array, Array1, Array2, Array3, ArrayD, ArrayView1, Axis, Ix2, IxDyn,
+    Array1, Array2, Array3, Axis,
 };
-use onnxruntime::session::{Input, Output, Session};
-use onnxruntime::tensor::{FromArray, InputTensor, OrtOwnedTensor};
-use onnxruntime::{ndarray, GraphOptimizationLevel};
 use tokenizers::Offsets;
 
+use crate::ClassPrediction;
 use crate::classification::ClassificationModel;
 use crate::common::Device;
 use crate::error::{Error, Result};
 use crate::hf_hub::{get_ordered_labels_from_config, hf_hub_download};
-use crate::modeling::conditional_generation::ConditionalGenerationModel;
-use crate::sampling::Sampler;
 use crate::tokenizer::AutoTokenizer;
-use crate::{ClassPrediction, Embedding, EmbeddingModel, PoolingStrategy};
 
 /// Wraps Huggingface Optimum pipeline exported to ONNX with `token-classification` task.
 ///
@@ -252,7 +241,7 @@ impl<'a> TokenClassificationPipeline<'a> {
         let token_type_ids = token_type_ids.insert_axis(Axis(0));
         let offsets = tokenized.get_offsets();
 
-        let mut scores =
+        let scores =
             self.model
                 .forward(input_ids, attention_mask.to_owned(), Some(token_type_ids))?;
 
@@ -339,7 +328,7 @@ impl<'a> TokenClassificationPipeline<'a> {
                 let mut max_score = f32::NEG_INFINITY;
                 let mut max_index = 0;
                 let mut all_classes: Vec<ClassPrediction> = vec![];
-                for (i, (score)) in izip!(score).enumerate() {
+                for (i, score) in izip!(score).enumerate() {
                     if *score > max_score {
                         max_score = *score;
                         max_index = i;
@@ -367,8 +356,6 @@ impl<'a> TokenClassificationPipeline<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
     use onnxruntime::LoggingLevel;
 
     use super::*;

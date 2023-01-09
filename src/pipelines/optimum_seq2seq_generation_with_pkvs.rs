@@ -1,28 +1,19 @@
-use std::cell::{RefCell, RefMut};
-use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
+use onnxruntime::{GraphOptimizationLevel, ndarray};
 use onnxruntime::environment::Environment;
 use onnxruntime::ndarray::{
-    concatenate, s, Array, Array1, Array2, ArrayD, ArrayView1, Axis, Ix2, IxDyn,
+    Array, Array1, ArrayView1, Axis, Ix2,
 };
-use onnxruntime::session::{Input, Output, Session};
-use onnxruntime::tensor::{FromArray, InputTensor, OrtOwnedTensor};
-use onnxruntime::{ndarray, GraphOptimizationLevel};
 use tokenizers::Encoding;
 
+use crate::{clone, Seq2SeqDecoderModelWithPKVs};
 use crate::common::Device;
-use crate::error::{Error, Result};
+use crate::error::Result;
 use crate::hf_hub::hf_hub_download;
-use crate::modeling::conditional_generation::ConditionalGenerationModel;
 use crate::sampling::Sampler;
 use crate::seq2seq_encoder::Seq2SeqEncoderModel;
 use crate::tokenizer::AutoTokenizer;
-use crate::Seq2SeqGenerationModel;
-use crate::{clone, Seq2SeqDecoderModelWithPKVs};
 
 /// Wraps Huggingface Optimum pipeline export to ONNX with `seq2seq-lm-with-past` task.
 ///
@@ -252,9 +243,9 @@ impl<'a> OptimumSeq2SeqPipelineWithPKVs<'a> {
         let mut eos_token_generated = vec![false; encoding.len()];
 
         let enc_tuple = self.enc_vec_to_tensor(encoding);
-        let mut input_ids = enc_tuple.0;
-        let mut attention_mask = enc_tuple.1;
-        let mut type_ids = enc_tuple.2;
+        let input_ids = enc_tuple.0;
+        let attention_mask = enc_tuple.1;
+        let type_ids = enc_tuple.2;
 
         let encoder_hidden_state = self.encoder_model.forward(
             input_ids,
@@ -363,15 +354,13 @@ impl<'a> OptimumSeq2SeqPipelineWithPKVs<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
-    use onnxruntime::environment::Environment;
     use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
+    use onnxruntime::environment::Environment;
 
+    use crate::OptimumSeq2SeqPipelineWithPKVs;
     use crate::common::Device;
     use crate::error::Result;
     use crate::sampling::TopKSampler;
-    use crate::{ConditionalGenerationPipeline, OptimumSeq2SeqPipelineWithPKVs};
 
     #[test]
     fn test_gen_model() -> Result<()> {

@@ -1,18 +1,10 @@
-use std::cell::RefMut;
 use std::collections::HashMap;
-use std::io::prelude::*;
-use std::path::{Path, PathBuf};
-use std::{env, fs, io};
 
-use onnxruntime::ndarray::{Array, Array2, IxDyn};
-use onnxruntime::session::{Input, Output, Session, SessionBuilder};
-use onnxruntime::tensor::{FromArray, InputTensor};
 use onnxruntime::{GraphOptimizationLevel, TensorElementDataType};
-use reqwest::blocking::{get, Client};
-use sha2::digest::Update;
-use sha2::{Digest, Sha256, Sha512};
+use onnxruntime::ndarray::IxDyn;
+use onnxruntime::session::{Input, SessionBuilder};
+use onnxruntime::tensor::{FromArray, InputTensor};
 
-use crate::ffi::GraphOptimizationLevelFFI;
 use crate::{Error, Result};
 
 pub fn match_to_inputs(
@@ -25,7 +17,7 @@ pub fn match_to_inputs(
         .map(|input| input.name.clone())
         .collect::<Vec<String>>();
     // check if inputs contain `.1` and remove it if it won't lead to duplicate inputs
-    let mut input_names = input_names
+    let input_names = input_names
         .iter()
         .map(|input_name| {
             if input_name.ends_with(".1") {

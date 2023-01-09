@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::str::FromStr;
 
-use serde_json::json;
 use serde_json::Value;
+use tokenizers::{PaddingDirection, PaddingParams, PaddingStrategy};
 use tokenizers::tokenizer::Tokenizer;
-use tokenizers::{Encoding, PaddingDirection, PaddingParams, PaddingStrategy};
 
 use crate::error::{Error, Result};
 

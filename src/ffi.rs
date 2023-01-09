@@ -1,34 +1,23 @@
-use std::borrow::Borrow;
-use std::cell::RefCell;
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 
-use interoptopus::patterns::slice::FFISlice;
-use interoptopus::patterns::string::AsciiPointer;
 use interoptopus::{
-    extra_type, ffi_function, ffi_service, ffi_service_ctor, ffi_service_ignore,
-    ffi_service_method, ffi_type, function, pattern, Inventory, InventoryBuilder,
+    ffi_service, ffi_service_ctor, ffi_service_ignore,
+    ffi_service_method, ffi_type, Inventory, InventoryBuilder, pattern,
 };
-use onnxruntime::ndarray::AssignElem;
+use interoptopus::patterns::string::AsciiPointer;
 use onnxruntime::{environment::Environment, GraphOptimizationLevel, LoggingLevel};
-use thread_local::ThreadLocal;
 
 use crate::common::Device;
-use crate::error::Error;
 use crate::error::Result;
-use crate::ffi::conditional_generation::*;
-use crate::ffi::conditional_generation_with_pkvs::*;
-use crate::ffi::embedding::*;
-use crate::ffi::error::FFIError;
-use crate::ffi::error::*;
-use crate::ConditionalGenerationPipeline;
+
 // Doesn't work: see https://github.com/huggingface/transformers/issues/16512
 // use crate::ffi::seq2seq_generation_with_pkvs::*;
-use crate::ffi::optimum_seq2seq_generation::*;
-use crate::ffi::optimum_seq2seq_generation_with_pkvs::*;
-use crate::ffi::seq2seq_generation::*;
-use crate::ffi::sequence_classification::*;
-use crate::ffi::token_classification::*;
-use crate::sampling::{ArgmaxSampler, RandomSampler, TopKSampler};
+
+
+
+
+
+
 
 pub mod conditional_generation;
 pub mod conditional_generation_with_pkvs;

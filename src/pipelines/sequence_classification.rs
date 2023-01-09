@@ -1,27 +1,16 @@
-use std::cell::{RefCell, RefMut};
-use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::fmt::format;
-use std::fs;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
+use onnxruntime::GraphOptimizationLevel;
 use onnxruntime::environment::Environment;
 use onnxruntime::ndarray::{
-    concatenate, s, Array, Array1, Array2, ArrayD, ArrayView1, Axis, Ix2, IxDyn,
+    Array1, Array2, Axis,
 };
-use onnxruntime::session::{Input, Output, Session};
-use onnxruntime::tensor::{FromArray, InputTensor, OrtOwnedTensor};
-use onnxruntime::{ndarray, GraphOptimizationLevel};
 
 use crate::classification::ClassificationModel;
 use crate::common::Device;
 use crate::error::{Error, Result};
 use crate::hf_hub::{get_ordered_labels_from_config, hf_hub_download};
-use crate::modeling::conditional_generation::ConditionalGenerationModel;
-use crate::sampling::Sampler;
 use crate::tokenizer::AutoTokenizer;
-use crate::{Embedding, EmbeddingModel, PoolingStrategy};
 
 /// Wraps Huggingface Optimum pipeline exported to ONNX with `sequence-classification` task.
 ///
@@ -244,7 +233,7 @@ impl<'a> SequenceClassificationPipeline<'a> {
         let token_type_ids = Array1::from_iter(tokenized.get_type_ids().iter().map(|i| *i as u32));
         let token_type_ids = token_type_ids.insert_axis(Axis(0));
 
-        let mut scores = self
+        let scores = self
             .model
             .forward(input_ids, attention_mask, Some(token_type_ids))?;
 
@@ -312,8 +301,6 @@ impl<'a> SequenceClassificationPipeline<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
     use onnxruntime::LoggingLevel;
 
     use super::*;

@@ -1,28 +1,20 @@
 use std::borrow::Borrow;
-use std::cell::RefCell;
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 use std::path::Path;
 
+use interoptopus::{
+    ffi_service, ffi_service_ctor, ffi_service_method, ffi_type,
+};
 use interoptopus::patterns::option::FFIOption;
 use interoptopus::patterns::slice::FFISlice;
 use interoptopus::patterns::string::AsciiPointer;
-use interoptopus::{
-    ffi_function, ffi_service, ffi_service_ctor, ffi_service_method, ffi_type, function, pattern,
-    Inventory, InventoryBuilder,
-};
-use onnxruntime::ndarray::AssignElem;
-use onnxruntime::{environment::Environment, LoggingLevel};
-use thread_local::ThreadLocal;
 
-use crate::common::Device;
-use crate::error::Error;
 use crate::error::Result;
-use crate::ffi::error::FFIError;
 use crate::ffi::{
     DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch, UseAsciiStringPattern,
 };
-use crate::sampling::{ArgmaxSampler, RandomSampler, TopKSampler};
 use crate::OptimumSeq2SeqPipeline;
+use crate::sampling::{ArgmaxSampler, RandomSampler, TopKSampler};
 
 #[ffi_type(opaque, name = "OptimumSeq2SeqPipeline")]
 pub struct OptimumSeq2SeqPipelineFFI<'a> {
@@ -271,8 +263,6 @@ impl<'a> OptimumSeq2SeqPipelineFFI<'a> {
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
-
     use super::*;
 
     #[test]

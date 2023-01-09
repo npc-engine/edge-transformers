@@ -1,8 +1,8 @@
+use std::{env, fs};
 use std::cmp::min;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::{env, fs, io};
 
 use dirs::home_dir;
 use futures_util::StreamExt;
@@ -167,7 +167,7 @@ fn url_to_filename(url: &str) -> PathBuf {
 
 #[cfg(test)]
 mod tests {
-    use reqwest::blocking::{get, Client};
+    use reqwest::blocking::Client;
 
     use super::*;
 

@@ -1,6 +1,4 @@
 use interoptopus::ffi_type;
-use interoptopus::pattern;
-use interoptopus::{Inventory, InventoryBuilder};
 
 use crate::Error;
 
