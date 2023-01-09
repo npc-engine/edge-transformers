@@ -2,8 +2,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use serde_json::Value;
-use tokenizers::{PaddingDirection, PaddingParams, PaddingStrategy};
 use tokenizers::tokenizer::Tokenizer;
+use tokenizers::{PaddingDirection, PaddingParams, PaddingStrategy};
 
 use crate::error::{Error, Result};
 

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use onnxruntime::{GraphOptimizationLevel, TensorElementDataType};
 use onnxruntime::ndarray::IxDyn;
 use onnxruntime::session::{Input, SessionBuilder};
 use onnxruntime::tensor::{FromArray, InputTensor};
+use onnxruntime::{GraphOptimizationLevel, TensorElementDataType};
 
 use crate::{Error, Result};
 

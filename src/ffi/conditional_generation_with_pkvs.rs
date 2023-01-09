@@ -2,19 +2,17 @@ use std::borrow::Borrow;
 use std::ffi::CString;
 use std::path::PathBuf;
 
-use interoptopus::{
-    ffi_service, ffi_service_ctor, ffi_service_method, ffi_type,
-};
 use interoptopus::patterns::slice::FFISlice;
 use interoptopus::patterns::string::AsciiPointer;
+use interoptopus::{ffi_service, ffi_service_ctor, ffi_service_method, ffi_type};
 
-use crate::ConditionalGenerationPipelineWithPKVs;
 use crate::error::Result;
-use crate::ffi::{
-    error::FFIError, DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch
-};
 use crate::ffi::UseAsciiStringPattern;
+use crate::ffi::{
+    error::FFIError, DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch,
+};
 use crate::sampling::{ArgmaxSampler, RandomSampler, TopKSampler};
+use crate::ConditionalGenerationPipelineWithPKVs;
 
 #[ffi_type(opaque, name = "ConditionalGenerationPipelineWithPKVs")]
 pub struct ConditionalGenerationPipelineWithPKVsFFI<'a> {

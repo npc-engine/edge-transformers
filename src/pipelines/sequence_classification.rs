@@ -1,10 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use onnxruntime::GraphOptimizationLevel;
 use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{
-    Array1, Array2, Axis,
-};
+use onnxruntime::ndarray::{Array1, Array2, Axis};
+use onnxruntime::GraphOptimizationLevel;
 
 use crate::classification::ClassificationModel;
 use crate::common::Device;

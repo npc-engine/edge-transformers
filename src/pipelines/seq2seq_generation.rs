@@ -1,18 +1,16 @@
 use std::path::{Path, PathBuf};
 
-use onnxruntime::{GraphOptimizationLevel, ndarray};
 use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{
-    Array, Array1, Array2, ArrayView1, Axis, concatenate, Ix2, s,
-};
+use onnxruntime::ndarray::{concatenate, s, Array, Array1, Array2, ArrayView1, Axis, Ix2};
+use onnxruntime::{ndarray, GraphOptimizationLevel};
 use tokenizers::Encoding;
 
 use crate::common::Device;
 use crate::error::Result;
 use crate::hf_hub::hf_hub_download;
 use crate::sampling::Sampler;
-use crate::Seq2SeqGenerationModel;
 use crate::tokenizer::AutoTokenizer;
+use crate::Seq2SeqGenerationModel;
 
 /// Wraps Huggingface AutoModelForCausalLM exported to ONNX with `seq2seq-lm` feature
 /// and pretrained tokenizer into simple text to text generative interface.
@@ -340,13 +338,13 @@ impl<'a> Seq2SeqGenerationPipeline<'a> {
 
 #[cfg(test)]
 mod tests {
-    use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
     use onnxruntime::environment::Environment;
+    use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
 
-    use crate::Seq2SeqGenerationPipeline;
     use crate::common::Device;
     use crate::error::Result;
     use crate::sampling::TopKSampler;
+    use crate::Seq2SeqGenerationPipeline;
 
     #[ignore]
     #[test]

@@ -1,16 +1,14 @@
 use std::path::{Path, PathBuf};
 
-use onnxruntime::GraphOptimizationLevel;
 use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{
-    Array1, Array2, Axis,
-};
+use onnxruntime::ndarray::{Array1, Array2, Axis};
+use onnxruntime::GraphOptimizationLevel;
 
-use crate::{Embedding, EmbeddingModel, PoolingStrategy};
 use crate::common::Device;
 use crate::error::Result;
 use crate::hf_hub::hf_hub_download;
 use crate::tokenizer::AutoTokenizer;
+use crate::{Embedding, EmbeddingModel, PoolingStrategy};
 
 /// Wraps Huggingface Optimum pipeline exported to ONNX with `default` task.
 ///
@@ -203,9 +201,9 @@ impl<'a> EmbeddingPipeline<'a> {
             token_type_ids.concat(),
         )?;
 
-        let output =
-            self.model
-                .forward(input_ids, Some(attention_mask), Some(token_type_ids))?;
+        let output = self
+            .model
+            .forward(input_ids, Some(attention_mask), Some(token_type_ids))?;
         Ok(output)
     }
 }

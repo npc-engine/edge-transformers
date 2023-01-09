@@ -1,8 +1,8 @@
-use std::{env, fs};
 use std::cmp::min;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::{env, fs};
 
 use dirs::home_dir;
 use futures_util::StreamExt;

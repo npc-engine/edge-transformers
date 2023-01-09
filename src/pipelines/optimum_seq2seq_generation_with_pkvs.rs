@@ -1,19 +1,17 @@
 use std::path::{Path, PathBuf};
 
-use onnxruntime::{GraphOptimizationLevel, ndarray};
 use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{
-    Array, Array1, ArrayView1, Axis, Ix2,
-};
+use onnxruntime::ndarray::{Array, Array1, ArrayView1, Axis, Ix2};
+use onnxruntime::{ndarray, GraphOptimizationLevel};
 use tokenizers::Encoding;
 
-use crate::{clone, Seq2SeqDecoderModelWithPKVs};
 use crate::common::Device;
 use crate::error::Result;
 use crate::hf_hub::hf_hub_download;
 use crate::sampling::Sampler;
 use crate::seq2seq_encoder::Seq2SeqEncoderModel;
 use crate::tokenizer::AutoTokenizer;
+use crate::{clone, Seq2SeqDecoderModelWithPKVs};
 
 /// Wraps Huggingface Optimum pipeline export to ONNX with `seq2seq-lm-with-past` task.
 ///
@@ -349,13 +347,13 @@ impl<'a> OptimumSeq2SeqPipelineWithPKVs<'a> {
 
 #[cfg(test)]
 mod tests {
-    use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
     use onnxruntime::environment::Environment;
+    use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
 
-    use crate::OptimumSeq2SeqPipelineWithPKVs;
     use crate::common::Device;
     use crate::error::Result;
     use crate::sampling::TopKSampler;
+    use crate::OptimumSeq2SeqPipelineWithPKVs;
 
     #[test]
     fn test_gen_model() -> Result<()> {

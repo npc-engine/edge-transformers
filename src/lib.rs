@@ -4,10 +4,10 @@ pub use onnxruntime;
 
 pub use common::*;
 pub use error::*;
+pub use ffi::*;
 pub use modeling::*;
 pub use pipelines::*;
 pub use sampling::*;
-pub use ffi::*;
 
 pub(crate) mod common;
 mod error;

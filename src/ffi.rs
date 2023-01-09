@@ -1,10 +1,10 @@
 use std::ffi::CString;
 
-use interoptopus::{
-    ffi_service, ffi_service_ctor,
-    ffi_service_method, ffi_type, Inventory, InventoryBuilder, pattern,
-};
 use interoptopus::patterns::string::AsciiPointer;
+use interoptopus::{
+    ffi_service, ffi_service_ctor, ffi_service_method, ffi_type, pattern, Inventory,
+    InventoryBuilder,
+};
 use onnxruntime::{environment::Environment, GraphOptimizationLevel, LoggingLevel};
 
 use crate::common::Device;
@@ -127,7 +127,6 @@ impl Default for StringBatch {
 
 #[ffi_service(error = "FFIError", prefix = "onnx_string_batch_")]
 impl StringBatch {
-
     #[ffi_service_ctor]
     pub fn new() -> Result<Self> {
         Ok(Self { batch: vec![] })

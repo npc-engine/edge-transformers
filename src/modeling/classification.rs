@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use onnxruntime::environment::Environment;
-use onnxruntime::GraphOptimizationLevel;
 use onnxruntime::ndarray::{Array, Array2, ArrayD, Axis, IxDyn};
 use onnxruntime::session::Session;
 use onnxruntime::tensor::{FromArray, InputTensor};
+use onnxruntime::GraphOptimizationLevel;
 
-use crate::common::{apply_device, match_to_inputs};
 use crate::common::Device;
+use crate::common::{apply_device, match_to_inputs};
 use crate::error::Result;
 
 /// Onnx inference session wrapper for the conditional generation models.

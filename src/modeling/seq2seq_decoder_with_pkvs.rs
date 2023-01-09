@@ -2,15 +2,15 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use onnxruntime::GraphOptimizationLevel;
 use onnxruntime::environment::Environment;
 use onnxruntime::ndarray::{Array, Array2, Array3, ArrayD, IxDyn};
 use onnxruntime::session::{Input, Output, Session};
 use onnxruntime::tensor::{FromArray, InputTensor};
+use onnxruntime::GraphOptimizationLevel;
 
 use crate::clone;
-use crate::common::{apply_device, match_to_inputs};
 use crate::common::Device;
+use crate::common::{apply_device, match_to_inputs};
 use crate::error::{Error, Result};
 
 /// Onnx inference session wrapper for the conditional generation models.

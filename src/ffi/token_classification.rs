@@ -2,20 +2,15 @@ use std::borrow::Borrow;
 use std::ffi::CString;
 use std::path::Path;
 
-use interoptopus::{
-    ffi_service, ffi_service_ctor, ffi_service_method, ffi_type,
-};
 use interoptopus::patterns::slice::FFISlice;
 use interoptopus::patterns::string::AsciiPointer;
+use interoptopus::{ffi_service, ffi_service_ctor, ffi_service_method, ffi_type};
 
-use crate::{
-    ClassPrediction, TaggedString, TokenClassificationPipeline,
-    TokenClassPrediction,
-};
 use crate::error::Result;
 use crate::ffi::{
-    error::FFIError, DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch
+    error::FFIError, DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch,
 };
+use crate::{ClassPrediction, TaggedString, TokenClassPrediction, TokenClassificationPipeline};
 
 #[repr(C)]
 #[ffi_type]

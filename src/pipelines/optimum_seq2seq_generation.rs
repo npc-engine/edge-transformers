@@ -1,10 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use onnxruntime::{GraphOptimizationLevel, ndarray};
 use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{
-    Array, Array1, ArrayView1, Axis, concatenate, Ix2,
-};
+use onnxruntime::ndarray::{concatenate, Array, Array1, ArrayView1, Axis, Ix2};
+use onnxruntime::{ndarray, GraphOptimizationLevel};
 use tokenizers::Encoding;
 
 use crate::clone;
@@ -336,13 +334,13 @@ impl<'a> OptimumSeq2SeqPipeline<'a> {
 
 #[cfg(test)]
 mod tests {
-    use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
     use onnxruntime::environment::Environment;
+    use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
 
-    use crate::OptimumSeq2SeqPipeline;
     use crate::common::Device;
     use crate::error::Result;
     use crate::sampling::TopKSampler;
+    use crate::OptimumSeq2SeqPipeline;
 
     #[test]
     fn test_gen_model() -> Result<()> {

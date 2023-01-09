@@ -1,10 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use onnxruntime::{GraphOptimizationLevel, ndarray};
 use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{
-    Array, Array1, Array2, ArrayView1, Axis, concatenate, s,
-};
+use onnxruntime::ndarray::{concatenate, s, Array, Array1, Array2, ArrayView1, Axis};
+use onnxruntime::{ndarray, GraphOptimizationLevel};
 
 use crate::common::Device;
 use crate::error::Result;
@@ -266,13 +264,13 @@ impl<'a> ConditionalGenerationPipeline<'a> {
 
 #[cfg(test)]
 mod tests {
-    use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
     use onnxruntime::environment::Environment;
+    use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
 
     use crate::common::Device;
-    use crate::ConditionalGenerationPipeline;
     use crate::error::Result;
     use crate::sampling::TopKSampler;
+    use crate::ConditionalGenerationPipeline;
 
     #[test]
     fn test_gen_model() -> Result<()> {

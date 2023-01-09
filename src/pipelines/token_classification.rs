@@ -1,19 +1,17 @@
 use std::path::{Path, PathBuf};
 
 use itertools::izip;
-use onnxruntime::GraphOptimizationLevel;
 use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{
-    Array1, Array2, Array3, Axis,
-};
+use onnxruntime::ndarray::{Array1, Array2, Array3, Axis};
+use onnxruntime::GraphOptimizationLevel;
 use tokenizers::Offsets;
 
-use crate::ClassPrediction;
 use crate::classification::ClassificationModel;
 use crate::common::Device;
 use crate::error::{Error, Result};
 use crate::hf_hub::{get_ordered_labels_from_config, hf_hub_download};
 use crate::tokenizer::AutoTokenizer;
+use crate::ClassPrediction;
 
 /// Wraps Huggingface Optimum pipeline exported to ONNX with `token-classification` task.
 ///
