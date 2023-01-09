@@ -356,6 +356,7 @@ impl<'a> TokenClassificationPipeline<'a> {
 
 #[cfg(test)]
 mod tests {
+    use more_asserts::assert_lt;
     use onnxruntime::LoggingLevel;
 
     use super::*;

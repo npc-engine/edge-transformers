@@ -10,7 +10,9 @@ use interoptopus::patterns::string::AsciiPointer;
 
 use crate::ConditionalGenerationPipelineWithPKVs;
 use crate::error::Result;
-use crate::ffi::{DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch};
+use crate::ffi::{
+    error::FFIError, DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch
+};
 use crate::ffi::UseAsciiStringPattern;
 use crate::sampling::{ArgmaxSampler, RandomSampler, TopKSampler};
 

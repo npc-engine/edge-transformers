@@ -167,9 +167,6 @@ mod tests {
         let input_ids1 =
             Array2::from_shape_vec((1, 8), vec![101, 2000, 1037, 1037, 1037, 1037, 1037, 102])
                 .unwrap();
-        let input_ids2 =
-            Array2::from_shape_vec((1, 8), vec![101, 2000, 1037, 1037, 1037, 1037, 1037, 102])
-                .unwrap();
         let attention_mask = Array2::from_shape_vec((1, 8), vec![1, 1, 1, 1, 1, 1, 1, 1]).unwrap();
         let embeddings = model
             .forward(input_ids1, Some(attention_mask), None)

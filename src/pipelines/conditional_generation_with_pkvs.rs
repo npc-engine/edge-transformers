@@ -309,11 +309,6 @@ mod tests {
             10,
             &sampler,
         )?;
-        let output = pipeline.generate_batch(
-            vec!["Hello world".to_string(), "Hello world".to_string()],
-            10,
-            &sampler,
-        )?;
         println!("{:?}", output);
         Ok(())
     }

@@ -11,7 +11,7 @@ use interoptopus::patterns::string::AsciiPointer;
 
 use crate::error::Result;
 use crate::ffi::{
-    DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch, UseAsciiStringPattern,
+    error::FFIError, DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch, UseAsciiStringPattern,
 };
 use crate::sampling::{ArgmaxSampler, RandomSampler, TopKSampler};
 use crate::Seq2SeqGenerationPipeline;

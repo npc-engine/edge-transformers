@@ -18,7 +18,6 @@ use crate::error::{Error, Result};
 pub struct ConditionalGenerationModelWithPKVs<'a> {
     model_session: RefCell<Session<'a>>,
     token_type_support: bool,
-    past_key_values: Vec<String>,
 }
 
 impl<'a> ConditionalGenerationModelWithPKVs<'a> {
@@ -33,12 +32,11 @@ impl<'a> ConditionalGenerationModelWithPKVs<'a> {
         let session = session_builder
             .with_optimization_level(optimization_level)?
             .with_model_from_memory(model_bytes)?;
-        let (token_type_support, past_key_values) =
+        let (token_type_support, _) =
             Self::validate_signature(&session.inputs, &session.outputs)?;
         Ok(Self {
             model_session: RefCell::new(session),
             token_type_support,
-            past_key_values,
         })
     }
 
@@ -53,12 +51,11 @@ impl<'a> ConditionalGenerationModelWithPKVs<'a> {
         let session = session_builder
             .with_optimization_level(optimization_level)?
             .with_model_from_file(model_path)?;
-        let (token_type_support, past_key_values) =
+        let (token_type_support, _) =
             Self::validate_signature(&session.inputs, &session.outputs)?;
         Ok(Self {
             model_session: RefCell::new(session),
             token_type_support,
-            past_key_values,
         })
     }
 

@@ -1,4 +1,4 @@
-use interoptopus::util::NamespaceMappings;
+#[cfg(any(feature = "generate-c", feature = "generate-csharp"))]
 use interoptopus::{Error, Interop};
 
 #[test]
@@ -21,6 +21,7 @@ fn generate_c() -> Result<(), Error> {
 #[test]
 #[cfg(feature = "generate-csharp")]
 fn generate_csharp() -> Result<(), Error> {
+    use interoptopus::util::NamespaceMappings;
     use interoptopus_backend_csharp::{Config, Generator};
 
     let inventory = edge_transformers::ffi::ffi_inventory();

@@ -4,6 +4,7 @@ use std::collections::BinaryHeap;
 use onnxruntime::ndarray::{Array, ArrayView, Axis, Ix2};
 use onnxruntime::tensor::ndarray_tensor::NdArrayTensor;
 use rand::distributions::{Distribution, WeightedIndex};
+#[allow(unused_imports)]
 use rand::prelude::*;
 use rand::thread_rng;
 
@@ -17,16 +18,6 @@ pub struct TopKSampler {
 }
 
 pub struct RandomSampler {
-    temperature: f32,
-}
-
-pub struct TopPSampler {
-    p: f32,
-    temperature: f32,
-}
-
-pub struct ContrastiveSampler {
-    alpha: f32,
     temperature: f32,
 }
 
@@ -60,17 +51,6 @@ impl RandomSampler {
 impl ArgmaxSampler {
     pub fn new() -> Self {
         Self {}
-    }
-}
-
-impl TopPSampler {
-    pub fn new(p: f32, temperature: f32) -> Self {
-        let temperature = if temperature == 0.0 {
-            1e-12
-        } else {
-            temperature
-        };
-        Self { p, temperature }
     }
 }
 

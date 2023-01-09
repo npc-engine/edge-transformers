@@ -1,7 +1,7 @@
 use std::ffi::CString;
 
 use interoptopus::{
-    ffi_service, ffi_service_ctor, ffi_service_ignore,
+    ffi_service, ffi_service_ctor,
     ffi_service_method, ffi_type, Inventory, InventoryBuilder, pattern,
 };
 use interoptopus::patterns::string::AsciiPointer;
@@ -9,15 +9,7 @@ use onnxruntime::{environment::Environment, GraphOptimizationLevel, LoggingLevel
 
 use crate::common::Device;
 use crate::error::Result;
-
-// Doesn't work: see https://github.com/huggingface/transformers/issues/16512
-// use crate::ffi::seq2seq_generation_with_pkvs::*;
-
-
-
-
-
-
+use crate::ffi::error::FFIError;
 
 pub mod conditional_generation;
 pub mod conditional_generation_with_pkvs;
@@ -121,9 +113,10 @@ impl From<DeviceFFI> for Device {
     }
 }
 
+#[repr(C)]
 #[ffi_type(opaque, name = "StringBatch")]
 pub struct StringBatch {
-    pub batch: Vec<String>,
+    batch: Vec<String>,
 }
 
 impl Default for StringBatch {
@@ -134,10 +127,6 @@ impl Default for StringBatch {
 
 #[ffi_service(error = "FFIError", prefix = "onnx_string_batch_")]
 impl StringBatch {
-    #[ffi_service_ignore]
-    pub fn from_vec(vec: Vec<String>) -> Self {
-        Self { batch: vec }
-    }
 
     #[ffi_service_ctor]
     pub fn new() -> Result<Self> {

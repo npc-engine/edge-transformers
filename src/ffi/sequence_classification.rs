@@ -12,7 +12,9 @@ use crate::{
     ClassPrediction, Prediction, SequenceClassificationPipeline,
 };
 use crate::error::Result;
-use crate::ffi::{DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch};
+use crate::ffi::{
+    error::FFIError, DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch
+};
 
 #[repr(C)]
 #[ffi_type]

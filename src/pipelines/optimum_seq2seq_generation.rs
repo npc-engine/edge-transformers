@@ -64,7 +64,6 @@ pub struct OptimumSeq2SeqPipeline<'a> {
     tokenizer: AutoTokenizer,
     encoder_model: Seq2SeqEncoderModel<'a>,
     decoder_model: Seq2SeqDecoderModel<'a>,
-    token_type_support: bool,
 }
 
 impl<'a> OptimumSeq2SeqPipeline<'a> {
@@ -136,13 +135,11 @@ impl<'a> OptimumSeq2SeqPipeline<'a> {
             device,
             optimization_level,
         )?;
-        let token_type_support = encoder_model.get_token_type_support();
 
         Ok(OptimumSeq2SeqPipeline {
             tokenizer,
             decoder_model,
             encoder_model,
-            token_type_support,
         })
     }
 
@@ -169,12 +166,10 @@ impl<'a> OptimumSeq2SeqPipeline<'a> {
             device,
             optimization_level,
         )?;
-        let token_type_support = encoder_model.get_token_type_support();
         Ok(OptimumSeq2SeqPipeline {
             tokenizer,
             encoder_model,
             decoder_model,
-            token_type_support,
         })
     }
 
