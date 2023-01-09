@@ -40,8 +40,8 @@ using EdgeTransformers;
 
 ...
     var env = EdgeTransformers.Environment.New(); //< -- Failed to load model
-    var condPipelinePkv = ConditionalGenerationPipelineWithPKVs.CreateFromPaths(
-        env.Context, condModelPathPkv, cond_tokenizer_config_p, cond_special_tokens_map_json, DeviceFFI.CPU, GraphOptimizationLevelFFI.Basic);
+    var condPipelinePkv = ConditionalGenerationPipelineWithPKVs.FromPretrained(
+        env.Context, "optimum/gpt2", DeviceFFI.DML, GraphOptimizationLevelFFI.All);
 
     string output = condPipelinePkv.GenerateTopkSampling("Hello world", 10, 5, 0.5f);
 ...
@@ -55,25 +55,20 @@ TODO
 
 ```csharp
 use std::fs;
-use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
 use onnxruntime::environment::Environment;
-use edge_transformers::{ConditionalGenerationPipeline, TopKSampler, Device};
+use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
+use edge_transformers::{ConditionalGenerationPipelineWithPKVs, TopKSampler, Device};
 
 let environment = Environment::builder()
-  .with_name("test")
- .with_log_level(LoggingLevel::Verbose)
-.build()
-.unwrap();
+   .with_name("test")
+   .with_log_level(LoggingLevel::Verbose)
+   .build()
+   .unwrap();
 
-let model = fs::read("resources/gen_test/model.onnx").unwrap();
-let tokenizer_config = fs::read_to_string("resources/gen_test/tokenizer.json").unwrap();
-let special_tokens_map = fs::read_to_string("resources/gen_test/special_tokens_map.json").unwrap();
 let sampler = TopKSampler::new(50, 0.9);
-let pipeline = ConditionalGenerationPipeline::new_from_memory(
+let pipeline = ConditionalGenerationPipelineWithPKVs::from_pretrained(
     &environment,
-    &model,
-    tokenizer_config,
-    special_tokens_map,
+    "optimum/gpt2".to_string(),
     Device::CPU,
     GraphOptimizationLevel::All,
 ).unwrap();
@@ -81,7 +76,6 @@ let pipeline = ConditionalGenerationPipeline::new_from_memory(
 let input = "This is a test";
 
 println!("{}", pipeline.generate(input, 10, &sampler).unwrap());
-
 ```
 
 ## Roadmap
