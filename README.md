@@ -52,7 +52,7 @@ Batch processing is supported, but is a bit unintuitive and requires StringBatch
 ```csharp
 using EdgeTransformers;
   ...
-        var env = EdgeTransformers.Environment.New(); //< -- Failed to load model
+        var env = EdgeTransformers.Environment.New();
         var condPipelinePkv = ConditionalGenerationPipelineWithPKVs.FromPretrained(
             env.Context, "optimum/gpt2", DeviceFFI.DML, GraphOptimizationLevelFFI.All);
         var string_batch = StringBatch.New();
