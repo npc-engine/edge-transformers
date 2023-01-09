@@ -2,19 +2,35 @@ use interoptopus::util::NamespaceMappings;
 use interoptopus::{Error, Interop};
 
 #[test]
-#[cfg_attr(miri, ignore)]
-fn bindings_csharp() -> Result<(), Error> {
+#[cfg(feature = "generate-c")]
+fn generate_c() -> Result<(), Error> {
+    use interoptopus_backend_c::{Config, Generator};
+
+    Generator::new(
+        Config {
+            ifndef: "edge_transformers".to_string(),
+            ..Config::default()
+        },
+        edge_transformers::ffi::ffi_inventory(),
+    )
+    .write_file("c/edge_transformers.h")?;
+
+    Ok(())
+}
+
+#[test]
+#[cfg(feature = "generate-csharp")]
+fn generate_csharp() -> Result<(), Error> {
     use interoptopus_backend_csharp::{Config, Generator};
 
-    let inventory = transformers_onnx_pipelines::ffi::ffi_inventory();
+    let inventory = edge_transformers::ffi::ffi_inventory();
     let config = Config {
-        class: "InteropClass".to_string(),
-        dll_name: "transformers_onnx_pipelines".to_string(),
-        namespace_mappings: NamespaceMappings::new("NPCEngine"),
+        class: "Interop".to_string(),
+        dll_name: "edge_transformers".to_string(),
+        namespace_mappings: NamespaceMappings::new("EdgeTransformers"),
         ..Config::default()
     };
 
-    Generator::new(config, inventory).write_file("Interop.cs")?;
-
+    Generator::new(config, inventory).write_file("csharp/EdgeTransformers.cs")?;
     Ok(())
 }

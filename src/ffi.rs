@@ -1,29 +1,49 @@
+use std::borrow::Borrow;
+use std::cell::RefCell;
 use std::ffi::{CStr, CString};
-use onnxruntime::{environment::Environment, LoggingLevel};
-use interoptopus::{
-    ffi_function, ffi_service, ffi_service_ctor, ffi_service_method, ffi_type, function, pattern,
-    Inventory, InventoryBuilder,
-};
+
 use interoptopus::patterns::slice::FFISlice;
 use interoptopus::patterns::string::AsciiPointer;
-use crate::ConditionalGenerationPipeline;
+use interoptopus::{
+    extra_type, ffi_function, ffi_service, ffi_service_ctor, ffi_service_ignore,
+    ffi_service_method, ffi_type, function, pattern, Inventory, InventoryBuilder,
+};
+use onnxruntime::ndarray::AssignElem;
+use onnxruntime::{environment::Environment, GraphOptimizationLevel, LoggingLevel};
+use thread_local::ThreadLocal;
+
+use crate::common::Device;
 use crate::error::Error;
 use crate::error::Result;
+use crate::ffi::conditional_generation::*;
+use crate::ffi::conditional_generation_with_pkvs::*;
+use crate::ffi::embedding::*;
+use crate::ffi::error::FFIError;
+use crate::ffi::error::*;
+use crate::ConditionalGenerationPipeline;
+// Doesn't work: see https://github.com/huggingface/transformers/issues/16512
+// use crate::ffi::seq2seq_generation_with_pkvs::*;
+use crate::ffi::optimum_seq2seq_generation::*;
+use crate::ffi::optimum_seq2seq_generation_with_pkvs::*;
+use crate::ffi::seq2seq_generation::*;
+use crate::ffi::sequence_classification::*;
+use crate::ffi::token_classification::*;
 use crate::sampling::{ArgmaxSampler, RandomSampler, TopKSampler};
 
-/// Device enum to specify the device to run the model on
-#[ffi_type]
-#[repr(C)]
-#[derive(Eq, PartialEq, Hash, Debug)]
-pub enum Device {
-    CPU,
-    DML,
-}
+pub mod conditional_generation;
+pub mod conditional_generation_with_pkvs;
+pub mod embedding;
+pub mod error;
+pub mod optimum_seq2seq_generation;
+pub mod optimum_seq2seq_generation_with_pkvs;
+pub mod seq2seq_generation;
+pub mod sequence_classification;
+pub mod token_classification;
 
 // Environment wrapper
 
 /// Holds text embedding with model specific threshold for cosine similarity.
-#[ffi_type(opaque)]
+#[ffi_type(opaque, name = "Environment")]
 pub struct EnvContainer {
     pub env: Environment,
 }
@@ -41,103 +61,155 @@ impl EnvContainer {
     }
 }
 
-// Pipeline wrappers
-
-pub struct ResultString<'a> {
-    pub result: String,
-    pub result_raw: AsciiPointer<'a>
-}
-
-
-#[ffi_type(opaque, name = "ConditionalGenerationPipeline")]
-pub struct ConditionalGenerationPipelineFFI<'a> {
-    pub model: ConditionalGenerationPipeline<'a>,
-}
-
-/// TODO: Add return class with access to result string and a `free()` method.
-#[ffi_service(error = "FFIError", prefix = "onnx_cond_gen_")]
-impl<'a> ConditionalGenerationPipelineFFI<'a> {
-    #[ffi_service_ctor]
-    pub fn new(
-        env: &'a EnvContainer,
-        model: FFISlice<u8>,
-        tokenizer_config: AsciiPointer<'a>,
-        special_tokens_map: AsciiPointer<'a>,
-        device: Device,
-    ) -> Result<Self> {
-        let model = ConditionalGenerationPipeline::new_from_memory(
-            &env.env,
-            model.as_slice(),
-            tokenizer_config.as_str().unwrap().to_string(),
-            special_tokens_map.as_str().unwrap().to_string(),
-            device,
-        )?;
-        Ok(Self { model })
-    }
-
-    #[ffi_service_method(on_panic = "return_default")]
-    pub fn generate_topk_sampling(&self, input: AsciiPointer<'a>, max_length: i32, topk: i32, temperature: f32) -> AsciiPointer<'a> {
-        let sampler = TopKSampler::new(topk as usize, temperature);
-        let output = self.model.generate(input.as_str().unwrap(), max_length, &sampler).unwrap();
-        AsciiPointer::from_slice_with_nul(output.as_bytes()).unwrap()
-    }
-
-    #[ffi_service_method(on_panic = "return_default")]
-    pub fn generate_random_sampling(&self, input: AsciiPointer<'a>, max_length: i32, temperature: f32) -> AsciiPointer<'a> {
-        let sampler = RandomSampler::new(temperature);
-        let output = self.model.generate(input.as_str().unwrap(), max_length, &sampler).unwrap();
-        AsciiPointer::from_slice_with_nul(output.as_bytes()).unwrap()
-    }
-
-    #[ffi_service_method(on_panic = "return_default")]
-    pub fn generate_argmax(&self, input: AsciiPointer<'a>, max_length: i32) -> AsciiPointer<'a> {
-        let sampler = ArgmaxSampler::new();
-        let output = self.model.generate(input.as_str().unwrap(), max_length, &sampler).unwrap();
-        AsciiPointer::from_slice_with_nul(output.as_bytes()).unwrap()
-    }
-
-
-
-}
-
-
-// Error handling wrapper
-
-#[ffi_type(patterns(ffi_error))]
+#[ffi_type]
 #[repr(C)]
-pub enum FFIError {
-    Ok = 0,
-    Null = 100,
-    Panic = 200,
-    Fail = 300,
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum GraphOptimizationLevelFFI {
+    DisableAll = 0,
+    Basic = 1,
+    Extended = 2,
+    All = 99,
 }
 
-impl From<Error> for FFIError {
-    fn from(_: Error) -> Self {
-        Self::Fail
+impl From<GraphOptimizationLevelFFI> for GraphOptimizationLevel {
+    fn from(level: GraphOptimizationLevelFFI) -> Self {
+        match level {
+            GraphOptimizationLevelFFI::DisableAll => GraphOptimizationLevel::DisableAll,
+            GraphOptimizationLevelFFI::Basic => GraphOptimizationLevel::Basic,
+            GraphOptimizationLevelFFI::Extended => GraphOptimizationLevel::Extended,
+            GraphOptimizationLevelFFI::All => GraphOptimizationLevel::All,
+        }
     }
 }
 
-impl Default for FFIError {
+impl From<GraphOptimizationLevel> for GraphOptimizationLevelFFI {
+    fn from(level: GraphOptimizationLevel) -> Self {
+        match level {
+            GraphOptimizationLevel::DisableAll => GraphOptimizationLevelFFI::DisableAll,
+            GraphOptimizationLevel::Basic => GraphOptimizationLevelFFI::Basic,
+            GraphOptimizationLevel::Extended => GraphOptimizationLevelFFI::Extended,
+            GraphOptimizationLevel::All => GraphOptimizationLevelFFI::All,
+        }
+    }
+}
+
+#[ffi_type]
+#[repr(C)]
+#[cfg(all(
+    not(feature = "cuda"),
+    not(feature = "tensorrt"),
+    not(feature = "directml")
+))]
+pub enum DeviceFFI {
+    CPU,
+}
+
+#[ffi_type]
+#[repr(C)]
+#[cfg(feature = "directml")]
+pub enum DeviceFFI {
+    CPU,
+    DML,
+}
+
+#[ffi_type]
+#[repr(C)]
+#[cfg(any(feature = "cuda", feature = "tensorrt"))]
+pub enum DeviceFFI {
+    CPU,
+    CUDA,
+}
+
+impl From<DeviceFFI> for Device {
+    fn from(device: DeviceFFI) -> Self {
+        match device {
+            DeviceFFI::CPU => Device::CPU,
+            #[cfg(feature = "directml")]
+            DeviceFFI::DML => Device::DML,
+            #[cfg(feature = "cuda")]
+            DeviceFFI::CUDA => Device::CUDA,
+        }
+    }
+}
+
+#[ffi_type(opaque, name = "StringBatch")]
+pub struct StringBatch {
+    pub batch: Vec<String>,
+}
+
+impl Default for StringBatch {
     fn default() -> Self {
-        Self::Ok
+        Self { batch: vec![] }
     }
 }
 
-impl interoptopus::patterns::result::FFIError for FFIError {
-    const SUCCESS: Self = Self::Ok;
-    const NULL: Self = Self::Null;
-    const PANIC: Self = Self::Panic;
+#[ffi_service(error = "FFIError", prefix = "onnx_string_batch_")]
+impl StringBatch {
+    #[ffi_service_ignore]
+    pub fn from_vec(vec: Vec<String>) -> Self {
+        Self { batch: vec }
+    }
+
+    #[ffi_service_ctor]
+    pub fn new() -> Result<Self> {
+        Ok(Self { batch: vec![] })
+    }
+
+    #[ffi_service_method(on_panic = "ffi_error")]
+    pub fn add(&mut self, add_string: AsciiPointer) -> Result<()> {
+        let add_string = add_string.as_str()?.to_string();
+        self.batch.push(add_string);
+        Ok(())
+    }
+
+    #[ffi_service_method(on_panic = "return_default")]
+    pub fn get(&self, id: u32) -> AsciiPointer {
+        AsciiPointer::from_slice_with_nul(
+            CString::new(self.batch[id as usize].clone())
+                .unwrap()
+                .into_bytes_with_nul()
+                .as_slice(),
+        )
+        .expect("Failed to convert CString to AsciiPointer")
+    }
+
+    #[ffi_service_method(on_panic = "return_default")]
+    pub fn length(&self) -> u32 {
+        self.batch.len() as u32
+    }
+
+    #[ffi_service_method(on_panic = "ffi_error")]
+    pub fn clear(&mut self) -> Result<()> {
+        self.batch.clear();
+        Ok(())
+    }
 }
 
-impl std::error::Error for Error {}
+#[ffi_type]
+#[repr(C)]
+pub struct UseAsciiStringPattern<'a> {
+    pub ascii_string: AsciiPointer<'a>,
+}
 
 pub fn ffi_inventory() -> Inventory {
     {
         InventoryBuilder::new()
+            // Environment
             .register(pattern!(crate::ffi::EnvContainer))
-            .register(pattern!(crate::ffi::ConditionalGenerationPipelineFFI))
+            .register(pattern!(crate::ffi::StringBatch))
+            // ConditionalGenerationPipeline
+            .register(pattern!(crate::ffi::conditional_generation::ConditionalGenerationPipelineFFI))
+            .register(pattern!(crate::ffi::conditional_generation_with_pkvs::ConditionalGenerationPipelineWithPKVsFFI))
+            // Embedding pipeline
+            .register(pattern!(crate::ffi::embedding::EmbeddingPipelineFFI))
+            // Sequence classification pipeline
+            .register(pattern!(crate::ffi::sequence_classification::SequenceClassificationPipelineFFI))
+            // Token classification pipeline
+            .register(pattern!(crate::ffi::token_classification::TokenClassificationPipelineFFI))
+            // Seq2Seq pipeline
+            .register(pattern!(crate::ffi::optimum_seq2seq_generation::OptimumSeq2SeqPipelineFFI))
+            .register(pattern!(crate::ffi::optimum_seq2seq_generation_with_pkvs::OptimumSeq2SeqPipelineWithPKVsFFI))
+            .register(pattern!(crate::ffi::seq2seq_generation::Seq2SeqGenerationPipelineFFI))
             .inventory()
     }
 }
-

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/transformers-onnx-pipelines.iml" filepath="$PROJECT_DIR$/transformers-onnx-pipelines.iml" />
+      <module fileurl="file://$PROJECT_DIR$/edge-transformers.iml" filepath="$PROJECT_DIR$/edge-transformers.iml" />
     </modules>
   </component>
 </project>

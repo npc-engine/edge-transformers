@@ -1,16 +1,14 @@
-use onnxruntime::ndarray;
-use onnxruntime::Axis;
-use onnxruntime::tensor::ndarray_tensor::NdArrayTensor;
-use distributions::WeightedIndex;
-use prelude::*;
 use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
+
 use onnxruntime::ndarray::{Array, ArrayView, Axis, Ix2};
+use onnxruntime::tensor::ndarray_tensor::NdArrayTensor;
 use rand::distributions::{Distribution, WeightedIndex};
+use rand::prelude::*;
 use rand::thread_rng;
 
 pub trait Sampler {
-    fn sample(&self, logits: ArrayView<f32, Ix2>) -> usize;
+    fn sample(&self, logits: ArrayView<f32, Ix2>) -> Vec<u32>;
 }
 
 pub struct TopKSampler {
@@ -22,17 +20,40 @@ pub struct RandomSampler {
     temperature: f32,
 }
 
+pub struct TopPSampler {
+    p: f32,
+    temperature: f32,
+}
+
+pub struct ContrastiveSampler {
+    alpha: f32,
+    temperature: f32,
+}
+
 pub struct ArgmaxSampler {}
 
 impl TopKSampler {
     pub fn new(k: usize, temperature: f32) -> Self {
-        Self { k, temperature }
+        Self {
+            k,
+            temperature: if temperature == 0.0 {
+                1e-12
+            } else {
+                temperature
+            },
+        }
     }
 }
 
 impl RandomSampler {
     pub fn new(temperature: f32) -> Self {
-        Self { temperature }
+        Self {
+            temperature: if temperature == 0.0 {
+                1e-12
+            } else {
+                temperature
+            },
+        }
     }
 }
 
@@ -42,8 +63,19 @@ impl ArgmaxSampler {
     }
 }
 
+impl TopPSampler {
+    pub fn new(p: f32, temperature: f32) -> Self {
+        let temperature = if temperature == 0.0 {
+            1e-12
+        } else {
+            temperature
+        };
+        Self { p, temperature }
+    }
+}
+
 impl Sampler for TopKSampler {
-    fn sample(&self, logits: ArrayView<f32, Ix2>) -> usize {
+    fn sample(&self, logits: ArrayView<f32, Ix2>) -> Vec<u32> {
         let top_elements: Vec<Vec<(usize, f32)>> = logits
             .axis_iter(Axis(0))
             .map(|row| {
@@ -69,15 +101,18 @@ impl Sampler for TopKSampler {
             for (id, value) in top_elements {
                 weights.push((id, (value / self.temperature).exp()));
             }
-            let dist = WeightedIndex::new(weights.iter().map(|(_, w)| *w)).unwrap();
-            sampled_ids.push(dist.sample(&mut rng));
+            let dist = WeightedIndex::new(weights.iter().map(|(_, w)| *w));
+            sampled_ids.push(match dist {
+                Ok(dist) => dist.sample(&mut rng) as u32,
+                Err(_) => weights[0].0 as u32,
+            });
         }
-        sampled_ids[0]
+        sampled_ids.into_iter().map(|id| id as u32).collect()
     }
 }
 
 impl Sampler for RandomSampler {
-    fn sample(&self, logits: ArrayView<f32, Ix2>) -> usize {
+    fn sample(&self, logits: ArrayView<f32, Ix2>) -> Vec<u32> {
         let mut rng = thread_rng();
         let mut sampled_ids = Vec::new();
         for row in logits.axis_iter(Axis(0)) {
@@ -85,15 +120,18 @@ impl Sampler for RandomSampler {
             for (id, value) in row.iter().enumerate() {
                 weights.push((id, (value / self.temperature).exp()));
             }
-            let dist = WeightedIndex::new(weights.iter().map(|(_, w)| *w)).unwrap();
-            sampled_ids.push(dist.sample(&mut rng));
+            let dist = WeightedIndex::new(weights.iter().map(|(_, w)| *w));
+            sampled_ids.push(match dist {
+                Ok(dist) => dist.sample(&mut rng) as u32,
+                Err(_) => weights[0].0 as u32,
+            });
         }
-        sampled_ids[0]
+        sampled_ids.into_iter().map(|id| id as u32).collect()
     }
 }
 
 impl Sampler for ArgmaxSampler {
-    fn sample(&self, logits: ArrayView<f32, Ix2>) -> usize {
+    fn sample(&self, logits: ArrayView<f32, Ix2>) -> Vec<u32> {
         let mut sampled_ids = Vec::new();
         for row in logits.axis_iter(Axis(0)) {
             let mut max_value = f32::MIN;
@@ -106,7 +144,7 @@ impl Sampler for ArgmaxSampler {
             }
             sampled_ids.push(max_id);
         }
-        sampled_ids[0]
+        sampled_ids.into_iter().map(|id| id as u32).collect()
     }
 }
 
@@ -138,11 +176,7 @@ impl Ord for Elem {
     }
 }
 
-pub fn select_k(
-    array: Array<f32, Ix2>,
-    k: usize,
-    axis: Axis,
-) -> Vec<Vec<(usize, f32)>> {
+pub fn select_k(array: Array<f32, Ix2>, k: usize, axis: Axis) -> Vec<Vec<(usize, f32)>> {
     let other_axis = if axis.index() == 0 { Axis(1) } else { Axis(0) };
     let top_elements: Vec<Vec<(usize, f32)>> = array
         .axis_iter(other_axis)
@@ -165,12 +199,7 @@ pub fn select_k(
     top_elements
 }
 
-pub fn sample(
-    array: ArrayView<f32, Ix2>,
-    k: usize,
-    temp: f32,
-    axis: Axis,
-) -> Vec<usize> {
+pub fn sample(array: ArrayView<f32, Ix2>, k: usize, temp: f32, axis: Axis) -> Vec<usize> {
     let softmax_array = (array.map(|x| x / temp)).softmax(Axis(1));
     let top_elems = select_k(softmax_array, k, axis);
     let mut rng = thread_rng();
