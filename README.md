@@ -101,7 +101,7 @@ println!("{}", pipeline.generate(input, 10, &sampler).unwrap());
 
 - [x] C# wrapper
 - [x] C wrapper
-- [ ] Migrate to [ort](https://github.com/pykeio/ort) crate
+- [x] Migrate to [ort](https://github.com/pykeio/ort) crate
 - [ ] Proper CI/CD to test and build for more execution providers
 - [ ] C++ wrapper
 - [ ] More pipelines (e.g. extractive QA, ASR, etc.)
