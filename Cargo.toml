@@ -34,6 +34,9 @@ ndarray = "0.15"
 half = "2.1"
 
 [features]
+default = ["download-binaries", "generate-csharp", "generate-c"]
+
+download-binaries = ["ort/download-binaries"]
 
 # ONNXRuntime Execution providers
 directml = ["ort/directml"]
