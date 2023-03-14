@@ -306,8 +306,9 @@ mod test {
         .unwrap();
 
         let output = pipeline.generate_topk_sampling(
-            AsciiPointer::from_slice_with_nul(b"translate English to French: How old are you?\0")
-                .unwrap(),
+            AsciiPointer::from_slice_with_nul(
+                CString::new("translate English to French: How old are you?")?.to_bytes_with_nul(),
+            )?,
             FFIOption::none(),
             32,
             5,
