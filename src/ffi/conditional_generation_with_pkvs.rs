@@ -275,7 +275,10 @@ mod test {
             5,
             1.0,
         );
-        println!("{}", output.as_str()?);
+        println!(
+            "{}",
+            output.as_c_str().unwrap().to_string_lossy().to_string()
+        );
         Ok(())
     }
 
