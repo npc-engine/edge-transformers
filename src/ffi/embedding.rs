@@ -74,7 +74,7 @@ impl<'a> EmbeddingPipelineFFI<'a> {
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = EmbeddingPipeline::from_pretrained(
-            env.env.borrow(),
+            env.env.clone(),
             model_id.as_str().unwrap().to_string(),
             pooling_strategy.into(),
             device.into(),
@@ -90,14 +90,14 @@ impl<'a> EmbeddingPipelineFFI<'a> {
     #[ffi_service_ctor]
     pub fn create_from_memory(
         env: &'a EnvContainer,
-        model: FFISlice<u8>,
+        model: &&'a FFISlice<'a, u8>,
         tokenizer_config: AsciiPointer<'a>,
         special_tokens_map: AsciiPointer<'a>,
         pooling_strategy: PoolingStrategyFFI,
         device: DeviceFFI,
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
-        let model = EmbeddingPipeline::<'a>::new_from_memory(
+        let model = EmbeddingPipeline::new_from_memory(
             &env.env,
             model.as_slice(),
             tokenizer_config.as_str().unwrap().to_string(),
@@ -124,7 +124,7 @@ impl<'a> EmbeddingPipelineFFI<'a> {
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = EmbeddingPipeline::new_from_files(
-            &env.env,
+            env.env.clone(),
             Path::new(model_path.as_str().unwrap()).to_path_buf(),
             Path::new(tokenizer_config_path.as_str().unwrap()).to_path_buf(),
             Path::new(special_tokens_map_path.as_str().unwrap()).to_path_buf(),

@@ -1,8 +1,9 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{concatenate, s, Array, Array1, Array2, ArrayView1, Axis, Ix2};
-use onnxruntime::{ndarray, GraphOptimizationLevel};
+use ort::environment::Environment;
+use ndarray::{concatenate, s, Array, Array1, Array2, ArrayView1, Axis, Ix2};
+use ort::GraphOptimizationLevel;
 use tokenizers::Encoding;
 
 use crate::common::Device;
@@ -27,8 +28,8 @@ use crate::Seq2SeqGenerationModel;
 ///
 ///```no_run
 /// use std::fs;
-/// use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
-/// use onnxruntime::environment::Environment;
+/// use ort::{GraphOptimizationLevel, LoggingLevel};
+/// use ort::environment::Environment;
 /// use edge_transformers::{Seq2SeqGenerationPipeline, TopKSampler,Device};
 ///
 /// let environment = Environment::builder()
@@ -39,10 +40,10 @@ use crate::Seq2SeqGenerationModel;
 ///
 /// let sampler = TopKSampler::new(50, 0.9);
 /// let pipeline = Seq2SeqGenerationPipeline::from_pretrained(
-///     &environment,
+///     environment.into_arc(),
 ///    "optimum/t5-small".to_string(),
 ///     Device::CPU,
-///     GraphOptimizationLevel::All,
+///     GraphOptimizationLevel::Level3,
 /// ).unwrap();
 ///
 /// let input = "This is a test";
@@ -58,7 +59,7 @@ pub struct Seq2SeqGenerationPipeline<'a> {
 
 impl<'a> Seq2SeqGenerationPipeline<'a> {
     pub fn from_pretrained(
-        env: &'a Environment,
+        env: Arc<Environment>,
         model_id: String,
         device: Device,
         optimization_level: GraphOptimizationLevel,
@@ -100,8 +101,8 @@ impl<'a> Seq2SeqGenerationPipeline<'a> {
 
     /// Creates new pipeline from ONNX model bytes and tokenizer configuration.
     pub fn new_from_memory(
-        environment: &'a Environment,
-        model: &[u8],
+        environment: Arc<Environment>,
+        model: &'a [u8],
         tokenizer_config: String,
         special_tokens_map: String,
         device: Device,
@@ -127,7 +128,7 @@ impl<'a> Seq2SeqGenerationPipeline<'a> {
 
     /// Creates new pipeline from ONNX model file and tokenizer configuration.
     pub fn new_from_files(
-        environment: &'a Environment,
+        environment: Arc<Environment>,
         model: PathBuf,
         tokenizer_config: PathBuf,
         special_tokens_map: PathBuf,
@@ -338,8 +339,8 @@ impl<'a> Seq2SeqGenerationPipeline<'a> {
 
 #[cfg(test)]
 mod tests {
-    use onnxruntime::environment::Environment;
-    use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
+    use ort::environment::Environment;
+    use ort::{GraphOptimizationLevel, LoggingLevel};
 
     use crate::common::Device;
     use crate::error::Result;
@@ -354,10 +355,10 @@ mod tests {
             .build()
             .unwrap();
         let pipeline = Seq2SeqGenerationPipeline::from_pretrained(
-            &env,
+            env.into_arc(),
             "optimum/t5-small".to_string(),
             Device::CPU,
-            GraphOptimizationLevel::All,
+            GraphOptimizationLevel::Level3,
         )?;
         let sampler = TopKSampler::new(5, 1.0);
         let output = pipeline.generate("Hello world mate", None, 10, &sampler)?;

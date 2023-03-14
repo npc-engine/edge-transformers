@@ -1,8 +1,9 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{concatenate, Array, Array1, ArrayView1, Axis, Ix2};
-use onnxruntime::{ndarray, GraphOptimizationLevel};
+use ort::environment::Environment;
+use ndarray::{concatenate, Array, Array1, ArrayView1, Axis, Ix2};
+use ort::GraphOptimizationLevel;
 use tokenizers::Encoding;
 
 use crate::clone;
@@ -26,18 +27,18 @@ use crate::tokenizer::AutoTokenizer;
 /// Example command:
 ///
 /// ```bash
-/// pip install optimum[onnxruntime]
+/// pip install optimum[ort]
 /// python -m optimum.exporters.onnx --model t5-base --for-ort --task seq2seq-lm ./resources/t5-base-nopast
 /// ```
 ///
-/// See details in [Optimum docs](https://huggingface.co/docs/optimum/onnxruntime/overview).
+/// See details in [Optimum docs](https://huggingface.co/docs/optimum/ort/overview).
 ///
 /// # Example
 ///
 /// ```
 /// use std::fs;
-/// use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
-/// use onnxruntime::environment::Environment;
+/// use ort::{GraphOptimizationLevel, LoggingLevel};
+/// use ort::environment::Environment;
 /// use edge_transformers::{OptimumSeq2SeqPipeline, TopKSampler,Device};
 ///
 /// let environment = Environment::builder()
@@ -48,10 +49,10 @@ use crate::tokenizer::AutoTokenizer;
 ///
 /// let sampler = TopKSampler::new(50, 0.9);
 /// let pipeline = OptimumSeq2SeqPipeline::from_pretrained(
-///     &environment,
+///     environment.into_arc(),
 ///     "optimum/t5-small".to_string(),
 ///     Device::CPU,
-///     GraphOptimizationLevel::All,
+///     GraphOptimizationLevel::Level3,
 /// ).unwrap();
 ///
 /// let input = "This is a test";
@@ -66,7 +67,7 @@ pub struct OptimumSeq2SeqPipeline<'a> {
 
 impl<'a> OptimumSeq2SeqPipeline<'a> {
     pub fn from_pretrained(
-        env: &'a Environment,
+        env: Arc<Environment>,
         model_id: String,
         device: Device,
         optimization_level: GraphOptimizationLevel,
@@ -112,9 +113,9 @@ impl<'a> OptimumSeq2SeqPipeline<'a> {
 
     /// Creates new pipeline from ONNX model bytes and tokenizer configuration.
     pub fn new_from_memory(
-        environment: &'a Environment,
-        encoder_model: &[u8],
-        decoder_model: &[u8],
+        environment: Arc<Environment>,
+        encoder_model: &'a [u8],
+        decoder_model: &'a [u8],
         tokenizer_config: String,
         special_tokens_map: String,
         device: Device,
@@ -122,7 +123,7 @@ impl<'a> OptimumSeq2SeqPipeline<'a> {
     ) -> Result<Self> {
         let tokenizer = AutoTokenizer::new_from_memory(tokenizer_config, special_tokens_map)?;
         let decoder_model = Seq2SeqDecoderModel::new_from_memory(
-            environment,
+            environment.clone(),
             decoder_model,
             device.clone(),
             clone(&optimization_level),
@@ -143,7 +144,7 @@ impl<'a> OptimumSeq2SeqPipeline<'a> {
 
     /// Creates new pipeline from ONNX model file and tokenizer configuration.
     pub fn new_from_files(
-        environment: &'a Environment,
+        environment: Arc<Environment>,
         encoder_model: PathBuf,
         decoder_model: PathBuf,
         tokenizer_config: PathBuf,
@@ -153,7 +154,7 @@ impl<'a> OptimumSeq2SeqPipeline<'a> {
     ) -> Result<Self> {
         let tokenizer = AutoTokenizer::new(tokenizer_config, special_tokens_map)?;
         let encoder_model = Seq2SeqEncoderModel::new_from_file(
-            environment,
+            environment.clone(),
             encoder_model,
             device.clone(),
             clone(&optimization_level),
@@ -334,8 +335,8 @@ impl<'a> OptimumSeq2SeqPipeline<'a> {
 
 #[cfg(test)]
 mod tests {
-    use onnxruntime::environment::Environment;
-    use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
+    use ort::environment::Environment;
+    use ort::{GraphOptimizationLevel, LoggingLevel};
 
     use crate::common::Device;
     use crate::error::Result;
@@ -349,10 +350,10 @@ mod tests {
             .build()
             .unwrap();
         let pipeline = OptimumSeq2SeqPipeline::from_pretrained(
-            &env,
+            env.into_arc(),
             "optimum/t5-small".to_string(),
             Device::CPU,
-            GraphOptimizationLevel::All,
+            GraphOptimizationLevel::Level3,
         )?;
         let sampler = TopKSampler::new(5, 1.0);
         let output = pipeline.generate("Hello world mate", None, 10, &sampler)?;

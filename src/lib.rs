@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 
-pub use onnxruntime;
+pub use ort;
 
 pub use common::*;
 pub use error::*;

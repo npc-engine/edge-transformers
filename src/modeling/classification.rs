@@ -1,20 +1,21 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 
-use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{Array, Array2, ArrayD, Axis, IxDyn};
-use onnxruntime::session::Session;
-use onnxruntime::tensor::{FromArray, InputTensor};
-use onnxruntime::GraphOptimizationLevel;
+use ort::environment::Environment;
+use ndarray::{ Array2, ArrayD, Axis, IxDyn};
+use ort::tensor::{FromArray, InputTensor};
+use ort::{GraphOptimizationLevel, InMemorySession, Session, SessionBuilder};
 
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
 use crate::error::Result;
+use crate::ORTSession;
 
 /// Onnx inference session wrapper for the conditional generation models.
 pub struct ClassificationModel<'a> {
-    model_session: RefCell<Session<'a>>,
+    model_session: ORTSession<'a>,
     token_type_support: bool,
     num_labels: usize,
     is_tok_classification: bool,
@@ -22,12 +23,12 @@ pub struct ClassificationModel<'a> {
 
 impl<'a> ClassificationModel<'a> {
     pub fn new_from_memory(
-        env: &'a Environment,
-        model_bytes: &[u8],
+        env: Arc<Environment>,
+        model_bytes: &'a [u8],
         device: Device,
         optimization_level: GraphOptimizationLevel,
     ) -> Result<Self> {
-        let mut session_builder = env.new_session_builder()?;
+        let mut session_builder = SessionBuilder::new(&env)?;
         session_builder = apply_device(session_builder, device)?;
         let session = session_builder
             .with_optimization_level(optimization_level)?
@@ -43,7 +44,7 @@ impl<'a> ClassificationModel<'a> {
         let num_labels = session.outputs[0].dimensions[num_dims - 1].unwrap() as usize;
         let is_tok_classification = num_dims == 3;
         Ok(Self {
-            model_session: RefCell::new(session),
+            model_session: ORTSession::InMemory(session),
             token_type_support,
             num_labels,
             is_tok_classification,
@@ -51,12 +52,12 @@ impl<'a> ClassificationModel<'a> {
     }
 
     pub fn new_from_file<'path>(
-        env: &'a Environment,
+        env: Arc<Environment>,
         model_path: PathBuf,
         device: Device,
         optimization_level: GraphOptimizationLevel,
     ) -> Result<Self> {
-        let mut session_builder = env.new_session_builder()?;
+        let mut session_builder = SessionBuilder::new(&env)?;
         session_builder = apply_device(session_builder, device)?;
         let session = session_builder
             .with_optimization_level(optimization_level)?
@@ -72,7 +73,7 @@ impl<'a> ClassificationModel<'a> {
         let num_labels = session.outputs[0].dimensions[num_dims - 1].unwrap() as usize;
         let is_tok_classification = num_dims == 3;
         Ok(Self {
-            model_session: RefCell::new(session),
+            model_session: ORTSession::Owned(session),
             token_type_support,
             num_labels,
             is_tok_classification,
@@ -89,27 +90,27 @@ impl<'a> ClassificationModel<'a> {
         token_type_ids: Option<Array2<u32>>,
     ) -> Result<ArrayD<f32>> {
         let input_map = self.prepare_input_map(input_ids, attention_mask, token_type_ids)?;
-        let input_tensor = match_to_inputs(&self.model_session.borrow().inputs, input_map)?;
-        let mut model = self.model_session.borrow_mut();
+        let model = match &self.model_session {
+            ORTSession::Owned(s) => s,
+            ORTSession::InMemory(s) => s,
+        };
+        let input_tensor = match_to_inputs(&model.inputs, input_map)?;
         let output_names = model
             .outputs
             .iter()
             .map(|o| o.name.clone())
             .collect::<Vec<_>>();
         let outputs_tensors = model.run(input_tensor)?;
-        let mut output_map: HashMap<String, Array<f32, IxDyn>> = output_names
-            .iter()
-            .map(|name| name.to_string())
-            .zip(outputs_tensors.into_iter().map(|tensor| {
-                Array::<f32, IxDyn>::from_shape_vec(
-                    tensor.shape(),
-                    tensor.iter().map(|x| *x).collect(),
-                )
-                .unwrap()
-            }))
-            .collect();
+        let mut output_map = HashMap::new();
+        for (name, tensor) in output_names.iter().zip(outputs_tensors) {
+            let extracted = tensor.try_extract()?;
+            let view = extracted.view();
+            let owned = view.to_owned();
+            let dimensionality = owned.into_dimensionality::<IxDyn>()?;
+            output_map.insert(name.to_string(), dimensionality);
+        }
         let logits = output_map.remove("logits").unwrap();
-        let exps = logits.mapv(|x| x.exp());
+        let exps = logits.mapv(|x: f32| x.exp());
         let sum = exps
             .sum_axis(Axis(logits.ndim() - 1))
             .insert_axis(Axis(logits.ndim() - 1));
@@ -123,8 +124,8 @@ impl<'a> ClassificationModel<'a> {
         input_ids: Array2<u32>,
         attention_mask: Array2<u32>,
         token_type_ids: Option<Array2<u32>>,
-    ) -> Result<HashMap<String, InputTensor<IxDyn>>> {
-        let mut input_map = HashMap::<String, InputTensor<IxDyn>>::new();
+    ) -> Result<HashMap<String, InputTensor>> {
+        let mut input_map = HashMap::<String, InputTensor>::new();
 
         if self.token_type_support {
             if let Some(token_types_array) = token_type_ids {
@@ -176,7 +177,7 @@ mod tests {
     fn test_seq_classify() {
         let env = Environment::builder().build().unwrap();
         let bert = ClassificationModel::new_from_file(
-            &env,
+            env.into_arc(),
             hf_hub_download(
                 "npc-engine/deberta-v3-small-finetuned-hate_speech18",
                 "model.onnx",
@@ -185,7 +186,7 @@ mod tests {
             )
             .unwrap(),
             Device::CPU,
-            GraphOptimizationLevel::DisableAll,
+            GraphOptimizationLevel::Disable,
         )
         .unwrap();
         let input_ids1 =
@@ -202,10 +203,10 @@ mod tests {
     fn test_tok_classify() {
         let env = Environment::builder().build().unwrap();
         let bert = ClassificationModel::new_from_file(
-            &env,
+            env.into_arc(),
             hf_hub_download("optimum/bert-base-NER", "model.onnx", None, None).unwrap(),
             Device::CPU,
-            GraphOptimizationLevel::DisableAll,
+            GraphOptimizationLevel::Disable,
         )
         .unwrap();
         let input_ids1 =

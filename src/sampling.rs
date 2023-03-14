@@ -1,8 +1,8 @@
 use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
 
-use onnxruntime::ndarray::{Array, ArrayView, Axis, Ix2};
-use onnxruntime::tensor::ndarray_tensor::NdArrayTensor;
+use ndarray::{Array, ArrayView, Axis, Ix2};
+use ort::tensor::ndarray_tensor::NdArrayTensor;
 use rand::distributions::{Distribution, WeightedIndex};
 #[allow(unused_imports)]
 use rand::prelude::*;

@@ -32,7 +32,7 @@ impl<'a> OptimumSeq2SeqPipelineWithPKVsFFI<'a> {
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = OptimumSeq2SeqPipelineWithPKVs::from_pretrained(
-            env.env.borrow(),
+            env.env.clone(),
             model_id.as_str().unwrap().to_string(),
             device.into(),
             optimization.into(),
@@ -47,16 +47,16 @@ impl<'a> OptimumSeq2SeqPipelineWithPKVsFFI<'a> {
     #[ffi_service_ctor]
     pub fn create_from_memory(
         env: &'a EnvContainer,
-        encoder_model: FFISlice<u8>,
-        decoder_model: FFISlice<u8>,
-        decoder_model_pkvs: FFISlice<u8>,
+        encoder_model: &'a FFISlice<'a, u8>,
+        decoder_model: &'a FFISlice<'a, u8>,
+        decoder_model_pkvs: &'a FFISlice<'a, u8>,
         tokenizer_config: AsciiPointer<'a>,
         special_tokens_map: AsciiPointer<'a>,
         device: DeviceFFI,
         optimization_level: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = OptimumSeq2SeqPipelineWithPKVs::new_from_memory(
-            &env.env,
+            env.env.clone(),
             encoder_model.as_slice().clone(),
             decoder_model.as_slice().clone(),
             decoder_model_pkvs.as_slice().clone(),
@@ -84,7 +84,7 @@ impl<'a> OptimumSeq2SeqPipelineWithPKVsFFI<'a> {
         optimization_level: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = OptimumSeq2SeqPipelineWithPKVs::new_from_files(
-            &env.env,
+            env.env.clone(),
             Path::new(encoder_model_path.as_str().unwrap()).to_path_buf(),
             Path::new(decoder_model_path.as_str().unwrap()).to_path_buf(),
             Path::new(decoder_model_pkvs_path.as_str().unwrap()).to_path_buf(),
@@ -272,7 +272,7 @@ mod test {
                 CString::new("optimum/t5-small")?.to_bytes_with_nul(),
             )?,
             DeviceFFI::CPU,
-            GraphOptimizationLevelFFI::All,
+            GraphOptimizationLevelFFI::Level3,
         )
         .unwrap();
 
@@ -297,7 +297,7 @@ mod test {
                 CString::new("optimum/t5-small")?.to_bytes_with_nul(),
             )?,
             DeviceFFI::CPU,
-            GraphOptimizationLevelFFI::All,
+            GraphOptimizationLevelFFI::Level3,
         )
         .unwrap();
         let b = StringBatch {

@@ -32,7 +32,7 @@ impl<'a> Seq2SeqGenerationPipelineFFI<'a> {
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = Seq2SeqGenerationPipeline::from_pretrained(
-            env.env.borrow(),
+            env.env.clone(),
             model_id.as_str().unwrap().to_string(),
             device.into(),
             optimization.into(),
@@ -47,14 +47,14 @@ impl<'a> Seq2SeqGenerationPipelineFFI<'a> {
     #[ffi_service_ctor]
     pub fn create_from_memory(
         env: &'a EnvContainer,
-        model: FFISlice<u8>,
+        model: &'a FFISlice<'a, u8>,
         tokenizer_config: AsciiPointer<'a>,
         special_tokens_map: AsciiPointer<'a>,
         device: DeviceFFI,
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = Seq2SeqGenerationPipeline::new_from_memory(
-            &env.env,
+            env.env.clone(),
             model.as_slice().clone(),
             tokenizer_config.as_str().unwrap().to_string(),
             special_tokens_map.as_str().unwrap().to_string(),
@@ -78,7 +78,7 @@ impl<'a> Seq2SeqGenerationPipelineFFI<'a> {
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = Seq2SeqGenerationPipeline::new_from_files(
-            &env.env,
+            env.env.clone(),
             Path::new(model_path.as_str().unwrap()).to_path_buf(),
             Path::new(tokenizer_config_path.as_str().unwrap()).to_path_buf(),
             Path::new(special_tokens_map_path.as_str().unwrap()).to_path_buf(),
@@ -276,7 +276,7 @@ mod test {
                 CString::new("resources/seq2seq/special_tokens_map.json")?.to_bytes_with_nul(),
             )?,
             DeviceFFI::CPU,
-            GraphOptimizationLevelFFI::All,
+            GraphOptimizationLevelFFI::Level3,
         )
         .unwrap();
 
@@ -308,7 +308,7 @@ mod test {
                 CString::new("resources/seq2seq/special_tokens_map.json")?.to_bytes_with_nul(),
             )?,
             DeviceFFI::CPU,
-            GraphOptimizationLevelFFI::All,
+            GraphOptimizationLevelFFI::Level3,
         )
         .unwrap();
         let b = StringBatch {

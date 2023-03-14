@@ -1,14 +1,15 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 
-use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{Array, Array2, Array3, ArrayD, IxDyn};
-use onnxruntime::session::{Input, Output, Session};
-use onnxruntime::tensor::{FromArray, InputTensor};
-use onnxruntime::GraphOptimizationLevel;
+use ort::environment::Environment;
+use ndarray::{Array, Array2, Array3, ArrayD, IxDyn};
+use ort::session::{Input, Output, Session};
+use ort::tensor::{FromArray, InputTensor};
+use ort::{GraphOptimizationLevel, InMemorySession, SessionBuilder};
 
-use crate::clone;
+use crate::{clone, ORTSession};
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
 use crate::error::{Error, Result};
@@ -17,26 +18,26 @@ use crate::error::{Error, Result};
 ///
 /// Validates inputs and outputs of the model and provides a convenient interface to the model.
 pub struct Seq2SeqDecoderModelWithPKVs<'a> {
-    model_session: RefCell<Session<'a>>,
-    model_session_with_pkvs: RefCell<Session<'a>>,
+    model_session: ORTSession<'a>,
+    model_session_with_pkvs: ORTSession<'a>,
     token_type_support: bool,
 }
 
 impl<'a> Seq2SeqDecoderModelWithPKVs<'a> {
     pub fn new_from_memory(
-        env: &'a Environment,
-        model_bytes: &[u8],
-        model_with_pkvs_bytes: &[u8],
+        env: Arc<Environment>,
+        model_bytes: &'a [u8],
+        model_with_pkvs_bytes: &'a [u8],
         device: Device,
         optimization_level: GraphOptimizationLevel,
     ) -> Result<Self> {
-        let mut session_builder = env.new_session_builder()?;
+        let mut session_builder = SessionBuilder::new(&env)?;
         session_builder = apply_device(session_builder, device.clone())?;
         let session = session_builder
             .with_optimization_level(clone(&optimization_level))?
             .with_model_from_memory(model_bytes)?;
 
-        let mut session_builder = env.new_session_builder()?;
+        let mut session_builder = SessionBuilder::new(&env)?;
         session_builder = apply_device(session_builder, device)?;
         let session_pkvs = session_builder
             .with_optimization_level(optimization_level)?
@@ -46,26 +47,26 @@ impl<'a> Seq2SeqDecoderModelWithPKVs<'a> {
         let token_type_support =
             Self::validate_signature(&session_pkvs.inputs, &session_pkvs.outputs, true)?;
         Ok(Self {
-            model_session: RefCell::new(session),
-            model_session_with_pkvs: RefCell::new(session_pkvs),
+            model_session: ORTSession::InMemory(session),
+            model_session_with_pkvs: ORTSession::InMemory(session_pkvs),
             token_type_support,
         })
     }
 
-    pub fn new_from_file<'path>(
-        env: &'a Environment,
+    pub fn new_from_file(
+        env: Arc<Environment>,
         model_path: PathBuf,
         model_with_pkvs_path: PathBuf,
         device: Device,
         optimization_level: GraphOptimizationLevel,
     ) -> Result<Self> {
-        let mut session_builder = env.new_session_builder()?;
+        let mut session_builder = SessionBuilder::new(&env.clone())?;
         session_builder = apply_device(session_builder, device.clone())?;
         let session = session_builder
             .with_optimization_level(clone(&optimization_level))?
             .with_model_from_file(model_path)?;
 
-        let mut session_builder = env.new_session_builder()?;
+        let mut session_builder = SessionBuilder::new(&env)?;
         session_builder = apply_device(session_builder, device)?;
         let session_pkvs = session_builder
             .with_optimization_level(optimization_level)?
@@ -75,8 +76,8 @@ impl<'a> Seq2SeqDecoderModelWithPKVs<'a> {
         let token_type_support =
             Self::validate_signature(&session_pkvs.inputs, &session_pkvs.outputs, true)?;
         Ok(Self {
-            model_session: RefCell::new(session),
-            model_session_with_pkvs: RefCell::new(session_pkvs),
+            model_session: ORTSession::Owned(session),
+            model_session_with_pkvs: ORTSession::Owned(session_pkvs),
             token_type_support,
         })
     }
@@ -152,9 +153,15 @@ impl<'a> Seq2SeqDecoderModelWithPKVs<'a> {
             past_key_values,
         )?;
         let mut session = if use_pkvs {
-            self.model_session_with_pkvs.borrow_mut()
+            match &self.model_session_with_pkvs {
+                ORTSession::InMemory(session) => session,
+                ORTSession::Owned(session) => session,
+            }
         } else {
-            self.model_session.borrow_mut()
+            match &self.model_session {
+                ORTSession::InMemory(session) => session,
+                ORTSession::Owned(session) => session,
+            }
         };
         let input_tensor = match_to_inputs(&session.inputs, input_map)?;
 
@@ -165,17 +172,15 @@ impl<'a> Seq2SeqDecoderModelWithPKVs<'a> {
             .collect();
 
         let output_vec = session.run(input_tensor)?;
-        let mut output_map: HashMap<String, Array<f32, IxDyn>> = output_names
-            .iter()
-            .map(|name| name.to_string())
-            .zip(output_vec.into_iter().map(|tensor| {
-                Array::<f32, IxDyn>::from_shape_vec(
-                    tensor.shape(),
-                    tensor.iter().map(|x| *x).collect(),
-                )
-                .unwrap()
-            }))
-            .collect();
+
+        let mut output_map = HashMap::new();
+        for (name, tensor) in output_names.iter().zip(output_vec) {
+            let extracted = tensor.try_extract()?;
+            let view = extracted.view();
+            let owned = view.to_owned();
+            let dimensionality = owned.into_dimensionality::<IxDyn>()?;
+            output_map.insert(name.to_string(), dimensionality);
+        }
 
         let output_logit = output_map.remove("logits").unwrap();
         let past_key_values = output_map
@@ -194,7 +199,7 @@ impl<'a> Seq2SeqDecoderModelWithPKVs<'a> {
         encoder_last_hidden_state: Array3<f32>,
         encoder_attention_mask: Option<Array2<u32>>,
         past_key_values: Option<HashMap<String, ArrayD<f32>>>,
-    ) -> Result<(HashMap<String, InputTensor<IxDyn>>, bool)> {
+    ) -> Result<(HashMap<String, InputTensor>, bool)> {
         let encoder_attention_mask = if encoder_attention_mask.is_none() {
             Array::ones((
                 encoder_last_hidden_state.shape()[0],
@@ -203,7 +208,7 @@ impl<'a> Seq2SeqDecoderModelWithPKVs<'a> {
         } else {
             encoder_attention_mask.unwrap()
         };
-        let mut input_map = HashMap::<String, InputTensor<IxDyn>>::new();
+        let mut input_map = HashMap::<String, InputTensor>::new();
         input_map.insert(
             "input_ids".to_string(),
             InputTensor::from_array(input_ids.into_dimensionality()?),
@@ -239,9 +244,9 @@ mod tests {
 
     #[test]
     fn test_model() {
-        let env = Environment::builder().build().unwrap();
+        let env = Environment::builder().build().unwrap().into_arc();
         let decoder_model = Seq2SeqDecoderModelWithPKVs::new_from_file(
-            &env,
+            env.clone(),
             hf_hub_download("optimum/t5-small", "decoder_model.onnx", None, None).unwrap(),
             hf_hub_download(
                 "optimum/t5-small",
@@ -251,14 +256,14 @@ mod tests {
             )
             .unwrap(),
             Device::CPU,
-            GraphOptimizationLevel::All,
+            GraphOptimizationLevel::Level3,
         )
         .unwrap();
         let encoder_model = Seq2SeqEncoderModel::new_from_file(
-            &env,
+            env,
             hf_hub_download("optimum/t5-small", "encoder_model.onnx", None, None).unwrap(),
             Device::CPU,
-            GraphOptimizationLevel::All,
+            GraphOptimizationLevel::Level3,
         )
         .unwrap();
         let input = vec![0, 1, 23, 23, 23, 23, 23, 23, 23, 23];

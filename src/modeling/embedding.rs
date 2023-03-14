@@ -1,16 +1,18 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
+use half::{bf16, f16};
 
-use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{Array, Array1, Array2, Axis, IxDyn};
-use onnxruntime::session::Session;
-use onnxruntime::tensor::{FromArray, InputTensor};
-use onnxruntime::GraphOptimizationLevel;
+use ort::environment::Environment;
+use ndarray::{Array, Array1, Array2, Axis, IxDyn};
+use ort::tensor::{FromArray, InputTensor, TensorElementDataType};
+use ort::{GraphOptimizationLevel, InMemorySession, Session, SessionBuilder};
 
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
 use crate::error::Result;
+use crate::ORTSession;
 
 pub enum PoolingStrategy {
     Mean,
@@ -20,7 +22,7 @@ pub enum PoolingStrategy {
 
 /// Onnx inference session wrapper for the conditional generation models.
 pub struct EmbeddingModel<'a> {
-    model_session: RefCell<Session<'a>>,
+    model_session: ORTSession<'a>,
     token_type_support: bool,
     pub pooling: PoolingStrategy,
 }
@@ -32,13 +34,13 @@ pub struct Embedding {
 
 impl<'a> EmbeddingModel<'a> {
     pub fn new_from_memory(
-        env: &'a Environment,
-        model_bytes: &[u8],
+        env: &'a Arc<Environment>,
+        model_bytes: &'a [u8],
         pooling: PoolingStrategy,
         device: Device,
         optimization_level: GraphOptimizationLevel,
     ) -> Result<Self> {
-        let mut session_builder = env.new_session_builder()?;
+        let mut session_builder = SessionBuilder::new(env)?;
 
         session_builder = apply_device(session_builder, device)?;
         let session = session_builder
@@ -52,20 +54,20 @@ impl<'a> EmbeddingModel<'a> {
                 .count()
                 > 0;
         Ok(Self {
-            model_session: RefCell::new(session),
+            model_session: ORTSession::InMemory(session),
             token_type_support,
             pooling,
         })
     }
 
-    pub fn new_from_file<'path>(
-        env: &'a Environment,
+    pub fn new_from_file(
+        env: Arc<Environment>,
         model_path: PathBuf,
         pooling: PoolingStrategy,
         device: Device,
         optimization_level: GraphOptimizationLevel,
     ) -> Result<Self> {
-        let mut session_builder = env.new_session_builder()?;
+        let mut session_builder = SessionBuilder::new(&env)?;
         session_builder = apply_device(session_builder, device)?;
         let session = session_builder
             .with_optimization_level(optimization_level)?
@@ -78,7 +80,7 @@ impl<'a> EmbeddingModel<'a> {
                 .count()
                 > 0;
         Ok(Self {
-            model_session: RefCell::new(session),
+            model_session: ORTSession::Owned(session),
             token_type_support,
             pooling,
         })
@@ -98,25 +100,36 @@ impl<'a> EmbeddingModel<'a> {
         token_type_ids: Option<Array2<u32>>,
     ) -> Result<Vec<Embedding>> {
         let input_map = self.prepare_input_map(input_ids, attention_mask, token_type_ids)?;
-        let input_tensor = match_to_inputs(&self.model_session.borrow().inputs, input_map)?;
-        let mut model = self.model_session.borrow_mut();
+        let model = match &self.model_session {
+            ORTSession::Owned(s) => s,
+            ORTSession::InMemory(s) => s,
+        };
+        let input_tensor = match_to_inputs(&model.inputs, input_map)?;
         let output_names = model
             .outputs
             .iter()
             .map(|o| o.name.clone())
             .collect::<Vec<_>>();
         let outputs_tensors = model.run(input_tensor)?;
-        let mut output_map: HashMap<String, Array<f32, IxDyn>> = output_names
-            .iter()
-            .map(|name| name.to_string())
-            .zip(outputs_tensors.into_iter().map(|tensor| {
-                Array::<f32, IxDyn>::from_shape_vec(
-                    tensor.shape(),
-                    tensor.iter().map(|x| *x).collect(),
-                )
-                .unwrap()
-            }))
-            .collect();
+
+        let mut output_map = HashMap::new();
+        for (name, tensor) in output_names.iter().zip(outputs_tensors) {
+            let extracted = match tensor.data_type() {
+                TensorElementDataType::Float16 => tensor.try_extract::<f16>()?.view().to_owned().mapv(|v| v.to_f32()),
+                TensorElementDataType::Float32 => tensor.try_extract::<f32>()?.view().to_owned(),
+                TensorElementDataType::Float64 => tensor.try_extract::<f64>()?.view().to_owned().mapv(|v| v as f32),
+                TensorElementDataType::Bfloat16 => tensor.try_extract::<bf16>()?.view().to_owned().mapv(|v| v.to_f32()),
+                _ => {
+                    return Err(format!(
+                        "Unsupported output data type {:?}",
+                        tensor.data_type()
+                    )
+                    .into())
+                }
+            };
+            let dimensionality = extracted.into_dimensionality::<IxDyn>()?;
+            output_map.insert(name.to_string(), dimensionality);
+        }
         // Use last_hidden_state as embedding and compute pooling on it
         let embeddings = match self.pooling {
             PoolingStrategy::Mean => {
@@ -151,8 +164,8 @@ impl<'a> EmbeddingModel<'a> {
         input_ids: Array2<u32>,
         attention_mask: Option<Array2<u32>>,
         token_type_ids: Option<Array2<u32>>,
-    ) -> Result<HashMap<String, InputTensor<IxDyn>>> {
-        let mut input_map = HashMap::<String, InputTensor<IxDyn>>::new();
+    ) -> Result<HashMap<String, InputTensor>> {
+        let mut input_map = HashMap::<String, InputTensor>::new();
         let attention_mask = if attention_mask.is_none() {
             Array::ones((input_ids.shape()[0], input_ids.shape()[1]))
         } else {
@@ -223,11 +236,11 @@ mod tests {
     fn test_bert() {
         let env = Environment::builder().build().unwrap();
         let bert = EmbeddingModel::new_from_file(
-            &env,
+            env.into_arc(),
             hf_hub_download("optimum/all-MiniLM-L6-v2", "model.onnx", None, None).unwrap(),
             PoolingStrategy::Mean,
             Device::CPU,
-            GraphOptimizationLevel::DisableAll,
+            GraphOptimizationLevel::Disable,
         )
         .unwrap();
         let input_ids1 =

@@ -1,17 +1,21 @@
 use std::collections::HashMap;
 
-use onnxruntime::ndarray::IxDyn;
-use onnxruntime::session::{Input, SessionBuilder};
-use onnxruntime::tensor::{FromArray, InputTensor};
-use onnxruntime::{GraphOptimizationLevel, TensorElementDataType};
-
+use ort::session::{Input, SessionBuilder};
+use ort::tensor::{FromArray, InputTensor, TensorElementDataType};
+use ort::{ExecutionProvider, GraphOptimizationLevel};
+use half::{f16, bf16};
 use crate::{Error, Result};
+
+pub enum ORTSession<'a> {
+    InMemory(ort::InMemorySession<'a>),
+    Owned(ort::Session),
+}
 
 pub fn match_to_inputs(
     inputs: &Vec<Input>,
-    mut values: HashMap<String, InputTensor<IxDyn>>,
-) -> Result<Vec<InputTensor<IxDyn>>> {
-    let mut inputs_array_vector: Vec<InputTensor<IxDyn>> = Default::default();
+    mut values: HashMap<String, InputTensor>,
+) -> Result<Vec<InputTensor>> {
+    let mut inputs_array_vector: Vec<InputTensor> = Default::default();
     let input_names = inputs
         .iter()
         .map(|input| input.name.clone())
@@ -31,7 +35,7 @@ pub fn match_to_inputs(
         .collect::<Vec<String>>();
     for (input, input_name) in inputs.iter().zip(input_names.iter()) {
         inputs_array_vector.push(match input.input_type {
-            TensorElementDataType::Float => {
+            TensorElementDataType::Float32 => {
                 if let Some(value) = values.remove(input_name) {
                     Ok::<_, Error>(cast_input_tensor_f32(value))
                 } else {
@@ -87,7 +91,7 @@ pub fn match_to_inputs(
                     return Err(format!("Missing input: {}", input.name).into());
                 }
             }
-            TensorElementDataType::Double => {
+            TensorElementDataType::Float64 => {
                 if let Some(value) = values.remove(input_name) {
                     Ok(cast_input_tensor_f64(value))
                 } else {
@@ -108,6 +112,27 @@ pub fn match_to_inputs(
                     return Err(format!("Missing input: {}", input.name).into());
                 }
             }
+            TensorElementDataType::Bool => {
+                if let Some(value) = values.remove(input_name) {
+                    Ok(value)
+                } else {
+                    return Err(format!("Missing input: {}", input.name).into());
+                }
+            }
+            TensorElementDataType::Float16 => {
+                if let Some(value) = values.remove(input_name) {
+                    Ok(cast_input_tensor_f16(value))
+                } else {
+                    return Err(format!("Missing input: {}", input.name).into());
+                }
+            }
+            TensorElementDataType::Bfloat16 => {
+                if let Some(value) = values.remove(input_name) {
+                    Ok(cast_input_tensor_bf16(value))
+                } else {
+                    return Err(format!("Missing input: {}", input.name).into());
+                }
+            }
         }?);
     }
     Ok(inputs_array_vector)
@@ -116,7 +141,7 @@ pub fn match_to_inputs(
 macro_rules! impl_cast_input_array {
     ($type_:ty) => {
         ::paste::paste! {
-            fn [<cast_input_tensor_ $type_>](input: InputTensor<IxDyn>) -> InputTensor<IxDyn>
+            fn [<cast_input_tensor_ $type_>](input: InputTensor) -> InputTensor
             {
                 let array = match input {
                     InputTensor::FloatTensor(array) => { array.mapv(|x| x as $type_) }
@@ -130,6 +155,34 @@ macro_rules! impl_cast_input_array {
                     InputTensor::Uint32Tensor(array) => { array.mapv(|x| x as $type_) }
                     InputTensor::Uint64Tensor(array) => { array.mapv(|x| x as $type_) }
                     InputTensor::StringTensor(array) => { array.mapv(|x| x.parse::<$type_>().unwrap()) }
+                    InputTensor::Float16Tensor(array) => { array.mapv(|x| x.to_f32() as $type_) }
+                    InputTensor::Bfloat16Tensor(array) => { array.mapv(|x| x.to_f32() as $type_) }
+                };
+                InputTensor::from_array(array)
+            }
+        }
+    };
+}
+
+macro_rules! impl_cast_non_primitive_array {
+    ($type_:ty) => {
+        ::paste::paste! {
+            fn [<cast_input_tensor_ $type_>](input: InputTensor) -> InputTensor
+            {
+                let array = match input {
+                    InputTensor::FloatTensor(array) => { array.mapv(|x| $type_::from_f64(x as f64)) }
+                    InputTensor::Uint8Tensor(array) => { array.mapv(|x| $type_::from_f64(x as f64)) }
+                    InputTensor::Int8Tensor(array) => { array.mapv(|x| $type_::from_f64(x as f64)) }
+                    InputTensor::Uint16Tensor(array) => { array.mapv(|x| $type_::from_f64(x as f64)) }
+                    InputTensor::Int16Tensor(array) => { array.mapv(|x| $type_::from_f64(x as f64)) }
+                    InputTensor::Int32Tensor(array) => { array.mapv(|x| $type_::from_f64(x as f64)) }
+                    InputTensor::Int64Tensor(array) => { array.mapv(|x| $type_::from_f64(x as f64)) }
+                    InputTensor::DoubleTensor(array) => { array.mapv(|x| $type_::from_f64(x as f64)) }
+                    InputTensor::Uint32Tensor(array) => { array.mapv(|x| $type_::from_f64(x as f64)) }
+                    InputTensor::Uint64Tensor(array) => { array.mapv(|x| $type_::from_f64(x as f64)) }
+                    InputTensor::StringTensor(array) => { array.mapv(|x| x.parse::<$type_>().unwrap()) }
+                    InputTensor::Float16Tensor(array) => { array.mapv(|x| $type_::from_f64(x.to_f64())) }
+                    InputTensor::Bfloat16Tensor(array) => { array.mapv(|x| $type_::from_f64(x.to_f64())) }
                 };
                 InputTensor::from_array(array)
             }
@@ -147,6 +200,8 @@ impl_cast_input_array!(i64);
 impl_cast_input_array!(f64);
 impl_cast_input_array!(u32);
 impl_cast_input_array!(u64);
+impl_cast_non_primitive_array!(f16);
+impl_cast_non_primitive_array!(bf16);
 
 #[derive(Debug, Clone)]
 /// Device enum to specify the device to run the model on
@@ -163,11 +218,11 @@ pub fn apply_device(
     device: Device,
 ) -> std::result::Result<SessionBuilder, Error> {
     match device {
-        Device::CPU => session_builder.use_cpu(1).map_err(|e| e.into()),
+        Device::CPU => session_builder.with_execution_providers([ExecutionProvider::cpu()]).map_err(|e| e.into()),
         #[cfg(feature = "directml")]
         Device::DML => {
             if cfg!(feature = "directml") {
-                session_builder.use_dml().map_err(|e| e.into())
+                session_builder.with_execution_providers([ExecutionProvider::directml()]).map_err(|e| e.into())
             } else {
                 return Err(Error::GenericError {
                     message: "DML feature is not enabled".to_string(),
@@ -177,7 +232,7 @@ pub fn apply_device(
         #[cfg(feature = "cuda")]
         Device::CUDA => {
             if cfg!(feature = "cuda") {
-                session_builder.use_cuda(0).map_err(|e| e.into())
+                session_builder.with_execution_providers([ExecutionProvider::cuda()]).map_err(|e| e.into())
             } else {
                 return Err(Error::GenericError {
                     message: "CUDA feature is not enabled".to_string(),
@@ -189,9 +244,9 @@ pub fn apply_device(
 
 pub fn clone(opt_level: &GraphOptimizationLevel) -> GraphOptimizationLevel {
     match opt_level {
-        GraphOptimizationLevel::DisableAll => GraphOptimizationLevel::DisableAll,
-        GraphOptimizationLevel::Basic => GraphOptimizationLevel::Basic,
-        GraphOptimizationLevel::Extended => GraphOptimizationLevel::Extended,
-        GraphOptimizationLevel::All => GraphOptimizationLevel::All,
+        GraphOptimizationLevel::Disable => GraphOptimizationLevel::Disable,
+        GraphOptimizationLevel::Level1 => GraphOptimizationLevel::Level1,
+        GraphOptimizationLevel::Level2 => GraphOptimizationLevel::Level2,
+        GraphOptimizationLevel::Level3 => GraphOptimizationLevel::Level3,
     }
 }

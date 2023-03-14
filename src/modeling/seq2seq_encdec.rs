@@ -1,32 +1,34 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 
-use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{Array, Array2, Array3, IxDyn};
-use onnxruntime::session::{Input, Output, Session};
-use onnxruntime::tensor::{FromArray, InputTensor};
-use onnxruntime::GraphOptimizationLevel;
+use ort::environment::Environment;
+use ndarray::{Array, Array2, Array3, IxDyn};
+use ort::session::{Input, Output};
+use ort::tensor::{FromArray, InputTensor};
+use ort::{GraphOptimizationLevel, InMemorySession, Session, SessionBuilder};
 
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
 use crate::error::{Error, Result};
+use crate::ORTSession;
 
 /// Onnx inference session wrapper for the Seq2Seq generation models.
 pub struct Seq2SeqGenerationModel<'a> {
-    model_session: RefCell<Session<'a>>,
+    model_session: ORTSession<'a>,
     token_type_support: bool,
     decoder_token_type_support: bool,
 }
 
 impl<'a> Seq2SeqGenerationModel<'a> {
     pub fn new_from_memory(
-        env: &'a Environment,
-        model_bytes: &[u8],
+        env: Arc<Environment>,
+        model_bytes: &'a [u8],
         device: Device,
         optimization_level: GraphOptimizationLevel,
     ) -> Result<Self> {
-        let mut session_builder = env.new_session_builder()?;
+        let mut session_builder = SessionBuilder::new(&env)?;
 
         session_builder = apply_device(session_builder, device)?;
         let session = session_builder
@@ -35,19 +37,20 @@ impl<'a> Seq2SeqGenerationModel<'a> {
         let (token_type_support, decoder_token_type_support) =
             Self::validate_signature(&session.inputs, &session.outputs)?;
         Ok(Self {
-            model_session: RefCell::new(session),
+            model_session: ORTSession::InMemory(session),
             token_type_support,
             decoder_token_type_support,
         })
     }
 
-    pub fn new_from_file<'path>(
-        env: &'a Environment,
+    pub fn new_from_file(
+        env: Arc<Environment>,
         model_path: PathBuf,
         device: Device,
         optimization_level: GraphOptimizationLevel,
     ) -> Result<Self> {
-        let mut session_builder = env.new_session_builder()?;
+        let mut session_builder = SessionBuilder::new(&env)?;
+
         session_builder = apply_device(session_builder, device)?;
         let session = session_builder
             .with_optimization_level(optimization_level)?
@@ -55,7 +58,7 @@ impl<'a> Seq2SeqGenerationModel<'a> {
         let (token_type_support, decoder_token_type_support) =
             Self::validate_signature(&session.inputs, &session.outputs)?;
         Ok(Self {
-            model_session: RefCell::new(session),
+            model_session: ORTSession::Owned(session),
             token_type_support,
             decoder_token_type_support,
         })
@@ -150,8 +153,11 @@ impl<'a> Seq2SeqGenerationModel<'a> {
             token_type_ids,
             decoder_token_type_ids,
         )?;
-        let input_tensor = match_to_inputs(&self.model_session.borrow().inputs, input_map)?;
-        let mut model = self.model_session.borrow_mut();
+        let mut model = match self.model_session {
+            ORTSession::Owned(ref model) => model,
+            ORTSession::InMemory(ref model) => model,
+        };
+        let input_tensor = match_to_inputs(&model.inputs, input_map)?;
         let output_names: Vec<String> = model
             .outputs
             .iter()
@@ -163,11 +169,7 @@ impl<'a> Seq2SeqGenerationModel<'a> {
             .iter()
             .map(|name| name.to_string())
             .zip(output_vec.into_iter().map(|tensor| {
-                Array::<f32, IxDyn>::from_shape_vec(
-                    tensor.shape(),
-                    tensor.iter().map(|x| *x).collect(),
-                )
-                .unwrap()
+                tensor.try_extract().unwrap().view().to_owned()
             }))
             .collect();
 
@@ -184,7 +186,7 @@ impl<'a> Seq2SeqGenerationModel<'a> {
         decoder_attention_mask: Option<Array2<u32>>,
         token_type_ids: Option<Array2<u32>>,
         decoder_token_type_ids: Option<Array2<u32>>,
-    ) -> Result<HashMap<String, InputTensor<IxDyn>>> {
+    ) -> Result<HashMap<String, InputTensor>> {
         let attention_mask = if attention_mask.is_none() {
             Array::ones((input_ids.shape()[0], input_ids.shape()[1]))
         } else {
@@ -213,7 +215,7 @@ impl<'a> Seq2SeqGenerationModel<'a> {
         } else {
             None
         };
-        let mut input_map = HashMap::<String, InputTensor<IxDyn>>::new();
+        let mut input_map = HashMap::<String, InputTensor>::new();
         if let Some(token_types_array) = token_type_ids {
             input_map.insert(
                 "token_type_ids".to_string(),
@@ -262,10 +264,10 @@ mod tests {
         file.read_to_end(&mut buffer)?;
         let env = Environment::builder().build()?;
         let model = Seq2SeqGenerationModel::new_from_memory(
-            &env,
+            env.into_arc(),
             buffer.as_slice(),
             Device::CPU,
-            GraphOptimizationLevel::All,
+            GraphOptimizationLevel::Level3,
         )?;
         let input = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         let decoder_input = vec![0, 0, 0, 0, 0];

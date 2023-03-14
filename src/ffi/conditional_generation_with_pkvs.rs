@@ -31,7 +31,7 @@ impl<'a> ConditionalGenerationPipelineWithPKVsFFI<'a> {
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = ConditionalGenerationPipelineWithPKVs::from_pretrained(
-            env.env.borrow(),
+            env.env.clone(),
             model_id.as_str().unwrap().to_string(),
             device.into(),
             optimization.into(),
@@ -46,13 +46,13 @@ impl<'a> ConditionalGenerationPipelineWithPKVsFFI<'a> {
     #[ffi_service_ctor]
     pub fn create_from_memory(
         env: &'a EnvContainer,
-        model: FFISlice<u8>,
+        model: &&'a FFISlice<'a, u8>,
         tokenizer_config: AsciiPointer<'a>,
         special_tokens_map: AsciiPointer<'a>,
         device: DeviceFFI,
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
-        let model = ConditionalGenerationPipelineWithPKVs::new_from_memory(
+        let pipeline = ConditionalGenerationPipelineWithPKVs::new_from_memory(
             &env.env,
             model.as_slice(),
             tokenizer_config.as_str().unwrap().to_string(),
@@ -61,7 +61,7 @@ impl<'a> ConditionalGenerationPipelineWithPKVsFFI<'a> {
             optimization.into(),
         )?;
         Ok(ConditionalGenerationPipelineWithPKVsFFI {
-            model,
+            model: pipeline,
             output_buf: Vec::new(),
             output_buf_ffi: Vec::new(),
         })
@@ -77,7 +77,7 @@ impl<'a> ConditionalGenerationPipelineWithPKVsFFI<'a> {
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = ConditionalGenerationPipelineWithPKVs::new_from_files(
-            &env.env,
+            env.env.clone(),
             PathBuf::from(model.as_str().unwrap()),
             PathBuf::from(tokenizer_config.as_str().unwrap()),
             PathBuf::from(special_tokens_map.as_str().unwrap()),
@@ -231,7 +231,7 @@ mod test {
             &e,
             AsciiPointer::from_slice_with_nul(CString::new("optimum/gpt2")?.to_bytes_with_nul())?,
             DeviceFFI::CPU,
-            GraphOptimizationLevelFFI::All,
+            GraphOptimizationLevelFFI::Level3,
         )
         .unwrap();
 
@@ -253,7 +253,7 @@ mod test {
             &e,
             AsciiPointer::from_slice_with_nul(CString::new("optimum/gpt2")?.to_bytes_with_nul())?,
             DeviceFFI::CPU,
-            GraphOptimizationLevelFFI::All,
+            GraphOptimizationLevelFFI::Level3,
         )
         .unwrap();
         let b = StringBatch {
