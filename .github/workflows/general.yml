@@ -6,6 +6,7 @@ env:
   CARGO_TERM_COLOR: always
   RUST_LOG: edge-transformers=debug
   RUST_BACKTRACE: 1
+  ORT_STRATEGY: download
 
 jobs:
   fmt:
