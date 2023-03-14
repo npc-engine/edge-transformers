@@ -308,8 +308,8 @@ mod test {
         };
         let b_dec = StringBatch {
             batch: vec![
-                "translate English to French: How old are you?".to_string(),
-                "translate English to French: What is your name?".to_string(),
+                "Answer:".to_string(),
+                "Answer:".to_string(),
             ],
         };
         let output = OptimumSeq2SeqPipelineWithPKVsFFI::generate_topk_sampling_batch(
@@ -322,11 +322,11 @@ mod test {
         );
         println!(
             "{:?}",
-            output.as_slice()[0].ascii_string.as_str()?.to_string()
+            output.as_slice()[0].ascii_string.as_c_str().unwrap().to_string_lossy().to_string()
         );
         println!(
             "{:?}",
-            output.as_slice()[1].ascii_string.as_str()?.to_string()
+            output.as_slice()[1].ascii_string.as_c_str().unwrap().to_string_lossy().to_string()
         );
         Ok(())
     }

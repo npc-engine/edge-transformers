@@ -269,7 +269,7 @@ mod test {
             5,
             1.0,
         );
-        println!("{:?}", output[0].ascii_string.as_str()?);
+        println!("{:?}", output[0].ascii_string.as_c_str().unwrap());
         Ok(())
     }
 }

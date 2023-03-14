@@ -320,11 +320,11 @@ mod test {
         );
         println!(
             "{:?}",
-            output.as_slice()[0].ascii_string.as_str()?.to_string()
+            output.as_slice()[0].ascii_string.as_c_str().unwrap().to_string_lossy().to_string()
         );
         println!(
             "{:?}",
-            output.as_slice()[1].ascii_string.as_str()?.to_string()
+            output.as_slice()[1].ascii_string.as_c_str().unwrap().to_string_lossy().to_string()
         );
         Ok(())
     }
