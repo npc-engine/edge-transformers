@@ -1,9 +1,10 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use itertools::izip;
-use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{Array1, Array2, Array3, Axis};
-use onnxruntime::GraphOptimizationLevel;
+use ndarray::{Array1, Array2, Array3, Axis};
+use ort::environment::Environment;
+use ort::GraphOptimizationLevel;
 use tokenizers::Offsets;
 
 use crate::classification::ClassificationModel;
@@ -22,8 +23,8 @@ use crate::ClassPrediction;
 /// ```
 /// use std::fs;
 /// use edge_transformers::Device;
-/// use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
-/// use onnxruntime::environment::Environment;
+/// use ort::{GraphOptimizationLevel, LoggingLevel};
+/// use ort::environment::Environment;
 /// use edge_transformers::TokenClassificationPipeline;
 ///
 /// let environment = Environment::builder()
@@ -33,10 +34,10 @@ use crate::ClassPrediction;
 /// .unwrap();
 ///
 /// let pipeline = TokenClassificationPipeline::from_pretrained(
-///     &environment,
+///     environment.into_arc(),
 ///     "optimum/bert-base-NER".to_string(),
 ///     Device::CPU,
-///     GraphOptimizationLevel::All
+///     GraphOptimizationLevel::Level3
 /// ).unwrap();
 ///
 /// let input = "This is a test";
@@ -65,7 +66,7 @@ pub struct TokenClassPrediction {
 
 impl<'a> TokenClassificationPipeline<'a> {
     pub fn from_pretrained(
-        env: &'a Environment,
+        env: Arc<Environment>,
         model_id: String,
         device: Device,
         optimization_level: GraphOptimizationLevel,
@@ -129,7 +130,7 @@ impl<'a> TokenClassificationPipeline<'a> {
     /// * `device` - Device to run the model on.
     /// * `optimization_level` - ONNX Runtime graph optimization level.
     pub fn new_from_files(
-        environment: &'a Environment,
+        environment: Arc<Environment>,
         model_path: PathBuf,
         tokenizer_config: PathBuf,
         special_tokens_map: PathBuf,
@@ -183,8 +184,8 @@ impl<'a> TokenClassificationPipeline<'a> {
     /// * `device` - Device to run the model on.
     /// * `optimization_level` - ONNX Runtime graph optimization level.
     pub fn new_from_memory(
-        environment: &'a Environment,
-        model: &[u8],
+        environment: Arc<Environment>,
+        model: &'a [u8],
         tokenizer_config: String,
         special_tokens_map: String,
         device: Device,
@@ -355,7 +356,7 @@ impl<'a> TokenClassificationPipeline<'a> {
 #[cfg(test)]
 mod tests {
     use more_asserts::assert_lt;
-    use onnxruntime::LoggingLevel;
+    use ort::LoggingLevel;
 
     use super::*;
 
@@ -367,10 +368,10 @@ mod tests {
             .build()
             .unwrap();
         let pipeline = TokenClassificationPipeline::from_pretrained(
-            &environment,
+            environment.into_arc(),
             "optimum/bert-base-NER".to_string(),
             Device::CPU,
-            GraphOptimizationLevel::All,
+            GraphOptimizationLevel::Level3,
         )
         .unwrap();
 

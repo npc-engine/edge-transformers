@@ -1,8 +1,9 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{Array1, Array2, Axis};
-use onnxruntime::GraphOptimizationLevel;
+use ndarray::{Array1, Array2, Axis};
+use ort::environment::Environment;
+use ort::GraphOptimizationLevel;
 
 use crate::classification::ClassificationModel;
 use crate::common::Device;
@@ -18,8 +19,8 @@ use crate::tokenizer::AutoTokenizer;
 ///
 /// ```
 /// use std::fs;
-/// use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
-/// use onnxruntime::environment::Environment;
+/// use ort::{GraphOptimizationLevel, LoggingLevel};
+/// use ort::environment::Environment;
 /// use edge_transformers::{EmbeddingPipeline, PoolingStrategy, SequenceClassificationPipeline, Device};
 ///
 /// let environment = Environment::builder()
@@ -29,10 +30,10 @@ use crate::tokenizer::AutoTokenizer;
 /// .unwrap();
 ///
 /// let pipeline = SequenceClassificationPipeline::from_pretrained(
-///     &environment,
+///     environment.into_arc(),
 ///    "npc-engine/deberta-v3-small-finetuned-hate_speech18".to_string(),
 ///     Device::CPU,
-///     GraphOptimizationLevel::All,
+///     GraphOptimizationLevel::Level3,
 /// ).unwrap();
 ///
 /// let input = "This is a test";
@@ -58,7 +59,7 @@ pub struct ClassPrediction {
 
 impl<'a> SequenceClassificationPipeline<'a> {
     pub fn from_pretrained(
-        env: &'a Environment,
+        env: Arc<Environment>,
         model_id: String,
         device: Device,
         optimization_level: GraphOptimizationLevel,
@@ -122,7 +123,7 @@ impl<'a> SequenceClassificationPipeline<'a> {
     /// * `device` - Device to run the model on.
     /// * `optimization_level` - ONNX Runtime graph optimization level.
     pub fn new_from_files(
-        environment: &'a Environment,
+        environment: Arc<Environment>,
         model_path: PathBuf,
         tokenizer_config: PathBuf,
         special_tokens_map: PathBuf,
@@ -176,8 +177,8 @@ impl<'a> SequenceClassificationPipeline<'a> {
     /// * `device` - Device to run the model on.
     /// * `optimization_level` - ONNX Runtime graph optimization level.
     pub fn new_from_memory(
-        environment: &'a Environment,
-        model: &[u8],
+        environment: Arc<Environment>,
+        model: &'a [u8],
         tokenizer_config: String,
         special_tokens_map: String,
         device: Device,
@@ -299,7 +300,7 @@ impl<'a> SequenceClassificationPipeline<'a> {
 
 #[cfg(test)]
 mod tests {
-    use onnxruntime::LoggingLevel;
+    use ort::LoggingLevel;
 
     use super::*;
 
@@ -311,10 +312,10 @@ mod tests {
             .build()
             .unwrap();
         let pipeline = SequenceClassificationPipeline::from_pretrained(
-            &environment,
+            environment.into_arc(),
             "npc-engine/deberta-v3-small-finetuned-hate_speech18".to_string(),
             Device::CPU,
-            GraphOptimizationLevel::All,
+            GraphOptimizationLevel::Level3,
         )
         .unwrap();
 

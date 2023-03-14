@@ -21,10 +21,10 @@ typedef enum deviceffi
 
 typedef enum graphoptimizationlevelffi
     {
-    GRAPHOPTIMIZATIONLEVELFFI_DISABLEALL = 0,
-    GRAPHOPTIMIZATIONLEVELFFI_BASIC = 1,
-    GRAPHOPTIMIZATIONLEVELFFI_EXTENDED = 2,
-    GRAPHOPTIMIZATIONLEVELFFI_ALL = 99,
+    GRAPHOPTIMIZATIONLEVELFFI_DISABLE = 0,
+    GRAPHOPTIMIZATIONLEVELFFI_LEVEL1 = 1,
+    GRAPHOPTIMIZATIONLEVELFFI_LEVEL2 = 2,
+    GRAPHOPTIMIZATIONLEVELFFI_LEVEL3 = 99,
     } graphoptimizationlevelffi;
 
 typedef enum poolingstrategyffi
@@ -52,8 +52,6 @@ typedef struct seq2seqgenerationpipeline seq2seqgenerationpipeline;
 typedef struct sequenceclassificationpipeline sequenceclassificationpipeline;
 
 typedef struct stringbatch stringbatch;
-
-typedef struct tokenclassificationpipeline tokenclassificationpipeline;
 
 typedef enum ffierror
     {
@@ -127,14 +125,6 @@ typedef struct predictionffi
     sliceclasspredictionffi all;
     } predictionffi;
 
-typedef struct tokenclasspredictionffi
-    {
-    classpredictionffi best;
-    sliceclasspredictionffi all;
-    uint32_t start;
-    uint32_t end;
-    } tokenclasspredictionffi;
-
 ///A pointer to an array of data someone else owns which may not be modified.
 typedef struct sliceembeddingffi
     {
@@ -148,26 +138,6 @@ typedef struct slicepredictionffi
     const predictionffi* data;
     uint64_t len;
     } slicepredictionffi;
-
-///A pointer to an array of data someone else owns which may not be modified.
-typedef struct slicetokenclasspredictionffi
-    {
-    const tokenclasspredictionffi* data;
-    uint64_t len;
-    } slicetokenclasspredictionffi;
-
-typedef struct taggedstringffi
-    {
-    const char* input_string;
-    slicetokenclasspredictionffi tags;
-    } taggedstringffi;
-
-///A pointer to an array of data someone else owns which may not be modified.
-typedef struct slicetaggedstringffi
-    {
-    const taggedstringffi* data;
-    uint64_t len;
-    } slicetaggedstringffi;
 
 
 /// Destroys the given instance.
@@ -208,7 +178,7 @@ ffierror onnx_cond_gen_destroy(conditionalgenerationpipeline** context);
 
 ffierror onnx_cond_gen_from_pretrained(conditionalgenerationpipeline** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_cond_gen_create_from_memory(conditionalgenerationpipeline** context, const environment* env, sliceu8 model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_cond_gen_create_from_memory(conditionalgenerationpipeline** context, const environment* env, const sliceu8* model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
 
 ffierror onnx_cond_gen_create_from_files(conditionalgenerationpipeline** context, const environment* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
 
@@ -234,7 +204,7 @@ ffierror onnx_cond_gen_pkvs_destroy(conditionalgenerationpipelinewithpkvs** cont
 
 ffierror onnx_cond_gen_pkvs_from_pretrained(conditionalgenerationpipelinewithpkvs** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_cond_gen_pkvs_create_from_memory(conditionalgenerationpipelinewithpkvs** context, const environment* env, sliceu8 model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_cond_gen_pkvs_create_from_memory(conditionalgenerationpipelinewithpkvs** context, const environment* env, const const sliceu8** model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
 
 ffierror onnx_cond_gen_pkvs_create_from_paths(conditionalgenerationpipelinewithpkvs** context, const environment* env, const char* model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
 
@@ -260,7 +230,7 @@ ffierror onnx_emb_destroy(embeddingpipeline** context);
 
 ffierror onnx_emb_from_pretrained(embeddingpipeline** context, const environment* env, const char* model_id, poolingstrategyffi pooling_strategy, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_emb_create_from_memory(embeddingpipeline** context, const environment* env, sliceu8 model, const char* tokenizer_config, const char* special_tokens_map, poolingstrategyffi pooling_strategy, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_emb_create_from_memory(embeddingpipeline** context, const environment* env, const const sliceu8** model, const char* tokenizer_config, const char* special_tokens_map, poolingstrategyffi pooling_strategy, deviceffi device, graphoptimizationlevelffi optimization);
 
 ffierror onnx_emb_create_from_files(embeddingpipeline** context, const environment* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, poolingstrategyffi pooling_strategy, deviceffi device, graphoptimizationlevelffi optimization);
 
@@ -278,7 +248,7 @@ ffierror onnx_classification_destroy(sequenceclassificationpipeline** context);
 
 ffierror onnx_classification_from_pretrained(sequenceclassificationpipeline** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_classification_create_from_memory(sequenceclassificationpipeline** context, const environment* env, sliceu8 model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_classification_create_from_memory(sequenceclassificationpipeline** context, const environment* env, const sliceu8* model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
 
 ffierror onnx_classification_create_from_files(sequenceclassificationpipeline** context, const environment* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
 
@@ -292,29 +262,11 @@ slicepredictionffi onnx_classification_classify_batch(sequenceclassificationpipe
 ///
 /// The passed parameter MUST have been created with the corresponding init function;
 /// passing any other value results in undefined behavior.
-ffierror onnx_token_classification_destroy(tokenclassificationpipeline** context);
-
-ffierror onnx_token_classification_from_pretrained(tokenclassificationpipeline** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
-
-ffierror onnx_token_classification_create_from_memory(tokenclassificationpipeline** context, const environment* env, sliceu8 model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
-
-ffierror onnx_token_classification_create_from_files(tokenclassificationpipeline** context, const environment* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
-
-taggedstringffi onnx_token_classification_tag(tokenclassificationpipeline* s, const char* input);
-
-slicetaggedstringffi onnx_token_classification_tag_batch(tokenclassificationpipeline* s, stringbatch input);
-
-/// Destroys the given instance.
-///
-/// # Safety
-///
-/// The passed parameter MUST have been created with the corresponding init function;
-/// passing any other value results in undefined behavior.
 ffierror onnx_optimum_seq2seq_destroy(optimumseq2seqpipeline** context);
 
 ffierror onnx_optimum_seq2seq_from_pretrained(optimumseq2seqpipeline** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_optimum_seq2seq_create_from_memory(optimumseq2seqpipeline** context, const environment* env, sliceu8 encoder_model, sliceu8 decoder_model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_optimum_seq2seq_create_from_memory(optimumseq2seqpipeline** context, const environment* env, const sliceu8* encoder_model, const sliceu8* decoder_model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
 
 ffierror onnx_optimum_seq2seq_create_from_files(optimumseq2seqpipeline** context, const environment* env, const char* encoder_model_path, const char* decoder_model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
 
@@ -340,7 +292,7 @@ ffierror onnx_optimum_seq2seq_pkvs_destroy(optimumseq2seqpipelinewithpkvs** cont
 
 ffierror onnx_optimum_seq2seq_pkvs_from_pretrained(optimumseq2seqpipelinewithpkvs** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_optimum_seq2seq_pkvs_create_from_memory(optimumseq2seqpipelinewithpkvs** context, const environment* env, sliceu8 encoder_model, sliceu8 decoder_model, sliceu8 decoder_model_pkvs, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization_level);
+ffierror onnx_optimum_seq2seq_pkvs_create_from_memory(optimumseq2seqpipelinewithpkvs** context, const environment* env, const sliceu8* encoder_model, const sliceu8* decoder_model, const sliceu8* decoder_model_pkvs, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization_level);
 
 ffierror onnx_optimum_seq2seq_pkvs_create_from_files(optimumseq2seqpipelinewithpkvs** context, const environment* env, const char* encoder_model_path, const char* decoder_model_path, const char* decoder_model_pkvs_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization_level);
 
@@ -366,7 +318,7 @@ ffierror onnx_seq2seq_destroy(seq2seqgenerationpipeline** context);
 
 ffierror onnx_seq2seq_from_pretrained(seq2seqgenerationpipeline** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_seq2seq_create_from_memory(seq2seqgenerationpipeline** context, const environment* env, sliceu8 model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_seq2seq_create_from_memory(seq2seqgenerationpipeline** context, const environment* env, const sliceu8* model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
 
 ffierror onnx_seq2seq_create_from_files(seq2seqgenerationpipeline** context, const environment* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
 

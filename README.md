@@ -1,3 +1,5 @@
+[![Rust](https://github.com/npc-engine/edge-transformers/actions/workflows/general.yml/badge.svg)](https://github.com/npc-engine/edge-transformers/actions/workflows/general.yml)
+
 Edge transformers is a Rust implementation of Huggingface's 
 [pipelines](https://huggingface.co/docs/transformers/main/en/quicktour#pipeline) 
 based on ONNX Runtime backend.
@@ -101,7 +103,7 @@ println!("{}", pipeline.generate(input, 10, &sampler).unwrap());
 
 - [x] C# wrapper
 - [x] C wrapper
-- [ ] Migrate to [ort](https://github.com/pykeio/ort) crate
+- [x] Migrate to [ort](https://github.com/pykeio/ort) crate
 - [ ] Proper CI/CD to test and build for more execution providers
 - [ ] C++ wrapper
 - [ ] More pipelines (e.g. extractive QA, ASR, etc.)

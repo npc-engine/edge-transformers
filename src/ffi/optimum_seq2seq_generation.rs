@@ -32,8 +32,8 @@ impl<'a> OptimumSeq2SeqPipelineFFI<'a> {
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = OptimumSeq2SeqPipeline::from_pretrained(
-            env.env.borrow(),
-            model_id.as_str().unwrap().to_string(),
+            env.env.clone(),
+            model_id.as_c_str().unwrap().to_string_lossy().to_string(),
             device.into(),
             optimization.into(),
         )?;
@@ -47,19 +47,27 @@ impl<'a> OptimumSeq2SeqPipelineFFI<'a> {
     #[ffi_service_ctor]
     pub fn create_from_memory(
         env: &'a EnvContainer,
-        encoder_model: FFISlice<u8>,
-        decoder_model: FFISlice<u8>,
+        encoder_model: &'a FFISlice<'a, u8>,
+        decoder_model: &'a FFISlice<'a, u8>,
         tokenizer_config: AsciiPointer<'a>,
         special_tokens_map: AsciiPointer<'a>,
         device: DeviceFFI,
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = OptimumSeq2SeqPipeline::new_from_memory(
-            &env.env,
+            env.env.clone(),
             encoder_model.as_slice().clone(),
             decoder_model.as_slice().clone(),
-            tokenizer_config.as_str().unwrap().to_string(),
-            special_tokens_map.as_str().unwrap().to_string(),
+            tokenizer_config
+                .as_c_str()
+                .unwrap()
+                .to_string_lossy()
+                .to_string(),
+            special_tokens_map
+                .as_c_str()
+                .unwrap()
+                .to_string_lossy()
+                .to_string(),
             device.into(),
             optimization.into(),
         )?;
@@ -81,11 +89,17 @@ impl<'a> OptimumSeq2SeqPipelineFFI<'a> {
         optimization: GraphOptimizationLevelFFI,
     ) -> Result<Self> {
         let model = OptimumSeq2SeqPipeline::new_from_files(
-            &env.env,
-            Path::new(encoder_model_path.as_str().unwrap()).to_path_buf(),
-            Path::new(decoder_model_path.as_str().unwrap()).to_path_buf(),
-            Path::new(tokenizer_config_path.as_str().unwrap()).to_path_buf(),
-            Path::new(special_tokens_map_path.as_str().unwrap()).to_path_buf(),
+            env.env.clone(),
+            Path::new(&*encoder_model_path.as_c_str().unwrap().to_string_lossy()).to_path_buf(),
+            Path::new(&*decoder_model_path.as_c_str().unwrap().to_string_lossy()).to_path_buf(),
+            Path::new(&*tokenizer_config_path.as_c_str().unwrap().to_string_lossy()).to_path_buf(),
+            Path::new(
+                &*special_tokens_map_path
+                    .as_c_str()
+                    .unwrap()
+                    .to_string_lossy(),
+            )
+            .to_path_buf(),
             device.into(),
             optimization.into(),
         )?;
@@ -106,11 +120,14 @@ impl<'a> OptimumSeq2SeqPipelineFFI<'a> {
         temperature: f32,
     ) -> AsciiPointer<'a> {
         let sampler = TopKSampler::new(topk as usize, temperature);
+        let decoder_input = decoder_input
+            .into_option()
+            .map(|s| s.as_c_str().unwrap().to_string_lossy().to_string());
         let output = self
             .model
             .generate(
-                input.as_str().unwrap(),
-                decoder_input.into_option().map(|s| s.as_str().unwrap()),
+                &*input.as_c_str().unwrap().to_string_lossy(),
+                decoder_input.as_ref().map(|s| s.borrow()),
                 max_length,
                 &sampler,
             )
@@ -128,11 +145,14 @@ impl<'a> OptimumSeq2SeqPipelineFFI<'a> {
         temperature: f32,
     ) -> AsciiPointer<'a> {
         let sampler = RandomSampler::new(temperature);
+        let decoder_input = decoder_input
+            .into_option()
+            .map(|s| s.as_c_str().unwrap().to_string_lossy().to_string());
         let output = self
             .model
             .generate(
-                input.as_str().unwrap(),
-                decoder_input.into_option().map(|s| s.as_str().unwrap()),
+                &*input.as_c_str().unwrap().to_string_lossy(),
+                decoder_input.as_ref().map(|s| s.borrow()),
                 max_length,
                 &sampler,
             )
@@ -150,11 +170,15 @@ impl<'a> OptimumSeq2SeqPipelineFFI<'a> {
         max_length: i32,
     ) -> AsciiPointer<'a> {
         let sampler = ArgmaxSampler::new();
+
+        let decoder_input_string = decoder_input
+            .into_option()
+            .map(|s| s.as_c_str().unwrap().to_string_lossy().to_string());
         let output = self
             .model
             .generate(
-                input.as_str().unwrap(),
-                decoder_input.into_option().map(|s| s.as_str().unwrap()),
+                &*input.as_c_str().unwrap().to_string_lossy(),
+                decoder_input_string.as_ref().map(|s| &**s),
                 max_length,
                 &sampler,
             )
@@ -273,19 +297,23 @@ mod test {
                 CString::new("optimum/t5-small")?.to_bytes_with_nul(),
             )?,
             DeviceFFI::CPU,
-            GraphOptimizationLevelFFI::All,
+            GraphOptimizationLevelFFI::Level3,
         )
         .unwrap();
 
         let output = pipeline.generate_topk_sampling(
-            AsciiPointer::from_slice_with_nul(b"translate English to French: How old are you?\0")
-                .unwrap(),
+            AsciiPointer::from_slice_with_nul(
+                CString::new("translate English to French: How old are you?")?.to_bytes_with_nul(),
+            )?,
             FFIOption::some(AsciiPointer::from_slice_with_nul(b"<pad>\0").unwrap()),
             32,
             5,
             1.0,
         );
-        println!("{}", output.as_str()?.to_string());
+        println!(
+            "{}",
+            output.as_c_str().unwrap().to_string_lossy().to_string()
+        );
         Ok(())
     }
 
@@ -298,7 +326,7 @@ mod test {
                 CString::new("optimum/t5-small")?.to_bytes_with_nul(),
             )?,
             DeviceFFI::CPU,
-            GraphOptimizationLevelFFI::All,
+            GraphOptimizationLevelFFI::Level3,
         )
         .unwrap();
         let b = StringBatch {
@@ -320,11 +348,21 @@ mod test {
         );
         println!(
             "{:?}",
-            output.as_slice()[0].ascii_string.as_str()?.to_string()
+            output.as_slice()[0]
+                .ascii_string
+                .as_c_str()
+                .unwrap()
+                .to_string_lossy()
+                .to_string()
         );
         println!(
             "{:?}",
-            output.as_slice()[1].ascii_string.as_str()?.to_string()
+            output.as_slice()[1]
+                .ascii_string
+                .as_c_str()
+                .unwrap()
+                .to_string_lossy()
+                .to_string()
         );
         Ok(())
     }

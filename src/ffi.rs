@@ -1,11 +1,12 @@
 use std::ffi::CString;
+use std::sync::Arc;
 
 use interoptopus::patterns::string::AsciiPointer;
 use interoptopus::{
     ffi_service, ffi_service_ctor, ffi_service_method, ffi_type, pattern, Inventory,
     InventoryBuilder,
 };
-use onnxruntime::{environment::Environment, GraphOptimizationLevel, LoggingLevel};
+use ort::{environment::Environment, GraphOptimizationLevel, LoggingLevel};
 
 use crate::common::Device;
 use crate::error::Result;
@@ -26,7 +27,7 @@ pub mod token_classification;
 /// Holds text embedding with model specific threshold for cosine similarity.
 #[ffi_type(opaque, name = "Environment")]
 pub struct EnvContainer {
-    pub env: Environment,
+    pub env: Arc<Environment>,
 }
 
 /// Holds text embedding with model specific threshold for cosine similarity.
@@ -38,7 +39,7 @@ impl EnvContainer {
             .with_log_level(LoggingLevel::Error)
             .build()
             .unwrap();
-        Ok(Self { env })
+        Ok(Self { env: Arc::new(env) })
     }
 }
 
@@ -46,19 +47,19 @@ impl EnvContainer {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum GraphOptimizationLevelFFI {
-    DisableAll = 0,
-    Basic = 1,
-    Extended = 2,
-    All = 99,
+    Disable = 0,
+    Level1 = 1,
+    Level2 = 2,
+    Level3 = 99,
 }
 
 impl From<GraphOptimizationLevelFFI> for GraphOptimizationLevel {
     fn from(level: GraphOptimizationLevelFFI) -> Self {
         match level {
-            GraphOptimizationLevelFFI::DisableAll => GraphOptimizationLevel::DisableAll,
-            GraphOptimizationLevelFFI::Basic => GraphOptimizationLevel::Basic,
-            GraphOptimizationLevelFFI::Extended => GraphOptimizationLevel::Extended,
-            GraphOptimizationLevelFFI::All => GraphOptimizationLevel::All,
+            GraphOptimizationLevelFFI::Disable => GraphOptimizationLevel::Disable,
+            GraphOptimizationLevelFFI::Level1 => GraphOptimizationLevel::Level1,
+            GraphOptimizationLevelFFI::Level2 => GraphOptimizationLevel::Level2,
+            GraphOptimizationLevelFFI::Level3 => GraphOptimizationLevel::Level3,
         }
     }
 }
@@ -66,10 +67,10 @@ impl From<GraphOptimizationLevelFFI> for GraphOptimizationLevel {
 impl From<GraphOptimizationLevel> for GraphOptimizationLevelFFI {
     fn from(level: GraphOptimizationLevel) -> Self {
         match level {
-            GraphOptimizationLevel::DisableAll => GraphOptimizationLevelFFI::DisableAll,
-            GraphOptimizationLevel::Basic => GraphOptimizationLevelFFI::Basic,
-            GraphOptimizationLevel::Extended => GraphOptimizationLevelFFI::Extended,
-            GraphOptimizationLevel::All => GraphOptimizationLevelFFI::All,
+            GraphOptimizationLevel::Disable => GraphOptimizationLevelFFI::Disable,
+            GraphOptimizationLevel::Level1 => GraphOptimizationLevelFFI::Level1,
+            GraphOptimizationLevel::Level2 => GraphOptimizationLevelFFI::Level2,
+            GraphOptimizationLevel::Level3 => GraphOptimizationLevelFFI::Level3,
         }
     }
 }
@@ -134,7 +135,7 @@ impl StringBatch {
 
     #[ffi_service_method(on_panic = "ffi_error")]
     pub fn add(&mut self, add_string: AsciiPointer) -> Result<()> {
-        let add_string = add_string.as_str()?.to_string();
+        let add_string = add_string.as_c_str().unwrap().to_string_lossy().to_string();
         self.batch.push(add_string);
         Ok(())
     }
@@ -182,7 +183,7 @@ pub fn ffi_inventory() -> Inventory {
             // Sequence classification pipeline
             .register(pattern!(crate::ffi::sequence_classification::SequenceClassificationPipelineFFI))
             // Token classification pipeline
-            .register(pattern!(crate::ffi::token_classification::TokenClassificationPipelineFFI))
+            // .register(pattern!(crate::ffi::token_classification::TokenClassificationPipelineFFI))
             // Seq2Seq pipeline
             .register(pattern!(crate::ffi::optimum_seq2seq_generation::OptimumSeq2SeqPipelineFFI))
             .register(pattern!(crate::ffi::optimum_seq2seq_generation_with_pkvs::OptimumSeq2SeqPipelineWithPKVsFFI))

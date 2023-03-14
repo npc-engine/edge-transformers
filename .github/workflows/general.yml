@@ -6,6 +6,7 @@ env:
   CARGO_TERM_COLOR: always
   RUST_LOG: edge-transformers=debug
   RUST_BACKTRACE: 1
+  ORT_STRATEGY: download
 
 jobs:
   fmt:
@@ -32,11 +33,11 @@ jobs:
       matrix:
         target:
           [
-            x86_64-pc-windows-msvc,
+            x86_64-unknown-linux-gnu,
           ]
         include:
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
     env:
       CARGO_BUILD_TARGET: ${{ matrix.target }}
     steps:

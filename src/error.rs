@@ -1,6 +1,6 @@
+use ndarray;
+use ort::OrtError;
 use std::fmt::{Display, Formatter};
-
-use onnxruntime::{ndarray, OrtError};
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 

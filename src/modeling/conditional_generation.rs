@@ -1,59 +1,60 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 
-use onnxruntime::environment::Environment;
-use onnxruntime::ndarray::{Array, Array2, Array3, IxDyn};
-use onnxruntime::session::{Input, Output, Session};
-use onnxruntime::tensor::{FromArray, InputTensor};
-use onnxruntime::GraphOptimizationLevel;
+use ndarray::{Array, Array2, Array3, IxDyn};
+use ort::environment::Environment;
+use ort::session::{Input, Output};
+use ort::tensor::{FromArray, InputTensor};
+use ort::{GraphOptimizationLevel, InMemorySession, Session, SessionBuilder};
 
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
 use crate::error::{Error, Result};
+use crate::ORTSession;
 
 /// Onnx inference session wrapper for the conditional generation models.
 ///
 /// Validates inputs and outputs of the model and provides a convenient interface to the model.
 pub struct ConditionalGenerationModel<'a> {
-    model_session: RefCell<Session<'a>>,
+    model_session: ORTSession<'a>,
     token_type_support: bool,
 }
 
 impl<'a> ConditionalGenerationModel<'a> {
     pub fn new_from_memory(
-        env: &'a Environment,
-        model_bytes: &[u8],
+        env: Arc<Environment>,
+        model_bytes: &'a [u8],
         device: Device,
         optimization_level: GraphOptimizationLevel,
     ) -> Result<Self> {
-        let mut session_builder = env.new_session_builder()?;
+        let mut session_builder = SessionBuilder::new(&env)?;
         session_builder = apply_device(session_builder, device)?;
         let session = session_builder
             .with_optimization_level(optimization_level)?
             .with_model_from_memory(model_bytes)?;
         let token_type_support = Self::validate_signature(&session.inputs, &session.outputs)?;
         Ok(Self {
-            model_session: RefCell::new(session),
+            model_session: ORTSession::InMemory(session),
             token_type_support,
         })
     }
 
-    pub fn new_from_file<'path>(
-        env: &'a Environment,
+    pub fn new_from_file(
+        env: Arc<Environment>,
         model_path: PathBuf,
         device: Device,
         optimization_level: GraphOptimizationLevel,
     ) -> Result<Self> {
-        let mut session_builder = env.new_session_builder()?;
-
+        let mut session_builder = SessionBuilder::new(&env)?;
         session_builder = apply_device(session_builder, device)?;
         let session = session_builder
             .with_optimization_level(optimization_level)?
-            .with_model_from_file(model_path)?;
+            .with_model_from_file(&model_path)?;
         let token_type_support = Self::validate_signature(&session.inputs, &session.outputs)?;
         Ok(Self {
-            model_session: RefCell::new(session),
+            model_session: ORTSession::Owned(session),
             token_type_support,
         })
     }
@@ -100,26 +101,25 @@ impl<'a> ConditionalGenerationModel<'a> {
         token_type_ids: Option<Array2<u32>>,
     ) -> Result<Array3<f32>> {
         let input_map = self.prepare_input_map(input_ids, attention_mask, token_type_ids)?;
-        let input_tensor = match_to_inputs(&self.model_session.borrow().inputs, input_map)?;
-        let mut model = self.model_session.borrow_mut();
+        let model = match &self.model_session {
+            ORTSession::InMemory(session) => session,
+            ORTSession::Owned(session) => session,
+        };
+        let input_tensor = match_to_inputs(&model.inputs, input_map)?;
         let output_names: Vec<String> = model
             .outputs
             .iter()
             .map(|output| output.name.to_string())
             .collect();
         let output_vec = model.run(input_tensor)?;
-
-        let mut output_map: HashMap<String, Array<f32, IxDyn>> = output_names
-            .iter()
-            .map(|name| name.to_string())
-            .zip(output_vec.into_iter().map(|tensor| {
-                Array::<f32, IxDyn>::from_shape_vec(
-                    tensor.shape(),
-                    tensor.iter().map(|x| *x).collect(),
-                )
-                .unwrap()
-            }))
-            .collect();
+        let mut output_map = HashMap::new();
+        for (name, tensor) in output_names.iter().zip(output_vec) {
+            let extracted = tensor.try_extract()?;
+            let view = extracted.view();
+            let owned = view.to_owned();
+            let dimensionality = owned.into_dimensionality::<IxDyn>()?;
+            output_map.insert(name.to_string(), dimensionality);
+        }
 
         let output_logit = output_map.remove("logits").unwrap();
 
@@ -131,7 +131,7 @@ impl<'a> ConditionalGenerationModel<'a> {
         input_ids: Array2<u32>,
         attention_mask: Option<Array2<u32>>,
         token_type_ids: Option<Array2<u32>>,
-    ) -> Result<HashMap<String, InputTensor<IxDyn>>> {
+    ) -> Result<HashMap<String, InputTensor>> {
         let attention_mask = if attention_mask.is_none() {
             Array::ones((input_ids.shape()[0], input_ids.shape()[1]))
         } else {
@@ -146,7 +146,7 @@ impl<'a> ConditionalGenerationModel<'a> {
         } else {
             None
         };
-        let mut input_map = HashMap::<String, InputTensor<IxDyn>>::new();
+        let mut input_map = HashMap::<String, InputTensor>::new();
         if let Some(token_types_array) = token_type_ids {
             input_map.insert(
                 "token_type_ids".to_string(),
@@ -179,10 +179,10 @@ mod tests {
     fn test_model() {
         let env = Environment::builder().build().unwrap();
         let model = ConditionalGenerationModel::new_from_file(
-            &env,
+            env.into_arc(),
             hf_hub_download("optimum/gpt2", "decoder_model.onnx", None, None).unwrap(),
             Device::CPU,
-            GraphOptimizationLevel::All,
+            GraphOptimizationLevel::Level3,
         )
         .unwrap();
         let input = vec![
