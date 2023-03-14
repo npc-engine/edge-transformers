@@ -3,16 +3,16 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use ort::environment::Environment;
 use ndarray::{Array, Array2, Array3, ArrayD, IxDyn};
+use ort::environment::Environment;
 use ort::session::{Input, Output, Session};
 use ort::tensor::{FromArray, InputTensor};
 use ort::{GraphOptimizationLevel, InMemorySession, SessionBuilder};
 
-use crate::{clone, ORTSession};
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
 use crate::error::{Error, Result};
+use crate::{clone, ORTSession};
 
 /// Onnx inference session wrapper for the conditional generation models.
 ///

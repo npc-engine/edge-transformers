@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use ndarray::{Array2, ArrayD, Axis, IxDyn};
 use ort::environment::Environment;
-use ndarray::{ Array2, ArrayD, Axis, IxDyn};
 use ort::tensor::{FromArray, InputTensor};
 use ort::{GraphOptimizationLevel, InMemorySession, Session, SessionBuilder};
 

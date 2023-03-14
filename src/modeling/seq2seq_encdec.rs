@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use ort::environment::Environment;
 use ndarray::{Array, Array2, Array3, IxDyn};
+use ort::environment::Environment;
 use ort::session::{Input, Output};
 use ort::tensor::{FromArray, InputTensor};
 use ort::{GraphOptimizationLevel, InMemorySession, Session, SessionBuilder};
@@ -168,9 +168,11 @@ impl<'a> Seq2SeqGenerationModel<'a> {
         let mut output_map: HashMap<String, Array<f32, IxDyn>> = output_names
             .iter()
             .map(|name| name.to_string())
-            .zip(output_vec.into_iter().map(|tensor| {
-                tensor.try_extract().unwrap().view().to_owned()
-            }))
+            .zip(
+                output_vec
+                    .into_iter()
+                    .map(|tensor| tensor.try_extract().unwrap().view().to_owned()),
+            )
             .collect();
 
         let output_logit = output_map.remove("logits").unwrap();

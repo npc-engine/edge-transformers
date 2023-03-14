@@ -2,8 +2,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use itertools::izip;
-use ort::environment::Environment;
 use ndarray::{Array1, Array2, Array3, Axis};
+use ort::environment::Environment;
 use ort::GraphOptimizationLevel;
 use tokenizers::Offsets;
 

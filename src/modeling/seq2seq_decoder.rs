@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use ort::environment::Environment;
 use ndarray::{Array, Array2, Array3, IxDyn};
+use ort::environment::Environment;
 use ort::session::{Input, Output, Session};
 use ort::tensor::{FromArray, InputTensor};
 use ort::{GraphOptimizationLevel, InMemorySession, SessionBuilder};
@@ -121,7 +121,6 @@ impl<'a> Seq2SeqDecoderModel<'a> {
             .map(|output| output.name.to_string())
             .collect();
         let output_vec = model.run(input_tensor)?;
-
 
         let mut output_map = HashMap::new();
         for (name, tensor) in output_names.iter().zip(output_vec) {

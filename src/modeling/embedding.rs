@@ -1,11 +1,11 @@
+use half::{bf16, f16};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use half::{bf16, f16};
 
-use ort::environment::Environment;
 use ndarray::{Array, Array1, Array2, Axis, IxDyn};
+use ort::environment::Environment;
 use ort::tensor::{FromArray, InputTensor, TensorElementDataType};
 use ort::{GraphOptimizationLevel, InMemorySession, Session, SessionBuilder};
 
@@ -115,16 +115,26 @@ impl<'a> EmbeddingModel<'a> {
         let mut output_map = HashMap::new();
         for (name, tensor) in output_names.iter().zip(outputs_tensors) {
             let extracted = match tensor.data_type() {
-                TensorElementDataType::Float16 => tensor.try_extract::<f16>()?.view().to_owned().mapv(|v| v.to_f32()),
+                TensorElementDataType::Float16 => tensor
+                    .try_extract::<f16>()?
+                    .view()
+                    .to_owned()
+                    .mapv(|v| v.to_f32()),
                 TensorElementDataType::Float32 => tensor.try_extract::<f32>()?.view().to_owned(),
-                TensorElementDataType::Float64 => tensor.try_extract::<f64>()?.view().to_owned().mapv(|v| v as f32),
-                TensorElementDataType::Bfloat16 => tensor.try_extract::<bf16>()?.view().to_owned().mapv(|v| v.to_f32()),
+                TensorElementDataType::Float64 => tensor
+                    .try_extract::<f64>()?
+                    .view()
+                    .to_owned()
+                    .mapv(|v| v as f32),
+                TensorElementDataType::Bfloat16 => tensor
+                    .try_extract::<bf16>()?
+                    .view()
+                    .to_owned()
+                    .mapv(|v| v.to_f32()),
                 _ => {
-                    return Err(format!(
-                        "Unsupported output data type {:?}",
-                        tensor.data_type()
+                    return Err(
+                        format!("Unsupported output data type {:?}", tensor.data_type()).into(),
                     )
-                    .into())
                 }
             };
             let dimensionality = extracted.into_dimensionality::<IxDyn>()?;

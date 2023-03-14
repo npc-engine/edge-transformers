@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use ort::environment::Environment;
 use ndarray::{concatenate, s, Array, Array1, Array2, ArrayView1, Axis, Ix2};
+use ort::environment::Environment;
 use ort::GraphOptimizationLevel;
 use tokenizers::Encoding;
 

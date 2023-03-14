@@ -1,3 +1,5 @@
+[![Rust](https://github.com/npc-engine/edge-transformers/actions/workflows/general.yml/badge.svg)](https://github.com/npc-engine/edge-transformers/actions/workflows/general.yml)
+
 Edge transformers is a Rust implementation of Huggingface's 
 [pipelines](https://huggingface.co/docs/transformers/main/en/quicktour#pipeline) 
 based on ONNX Runtime backend.

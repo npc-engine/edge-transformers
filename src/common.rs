@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
+use crate::{Error, Result};
+use half::{bf16, f16};
 use ort::session::{Input, SessionBuilder};
 use ort::tensor::{FromArray, InputTensor, TensorElementDataType};
 use ort::{ExecutionProvider, GraphOptimizationLevel};
-use half::{f16, bf16};
-use crate::{Error, Result};
 
 pub enum ORTSession<'a> {
     InMemory(ort::InMemorySession<'a>),
@@ -218,11 +218,15 @@ pub fn apply_device(
     device: Device,
 ) -> std::result::Result<SessionBuilder, Error> {
     match device {
-        Device::CPU => session_builder.with_execution_providers([ExecutionProvider::cpu()]).map_err(|e| e.into()),
+        Device::CPU => session_builder
+            .with_execution_providers([ExecutionProvider::cpu()])
+            .map_err(|e| e.into()),
         #[cfg(feature = "directml")]
         Device::DML => {
             if cfg!(feature = "directml") {
-                session_builder.with_execution_providers([ExecutionProvider::directml()]).map_err(|e| e.into())
+                session_builder
+                    .with_execution_providers([ExecutionProvider::directml()])
+                    .map_err(|e| e.into())
             } else {
                 return Err(Error::GenericError {
                     message: "DML feature is not enabled".to_string(),
@@ -232,7 +236,9 @@ pub fn apply_device(
         #[cfg(feature = "cuda")]
         Device::CUDA => {
             if cfg!(feature = "cuda") {
-                session_builder.with_execution_providers([ExecutionProvider::cuda()]).map_err(|e| e.into())
+                session_builder
+                    .with_execution_providers([ExecutionProvider::cuda()])
+                    .map_err(|e| e.into())
             } else {
                 return Err(Error::GenericError {
                     message: "CUDA feature is not enabled".to_string(),
