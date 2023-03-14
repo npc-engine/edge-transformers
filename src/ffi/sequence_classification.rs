@@ -83,7 +83,7 @@ impl<'a> SequenceClassificationPipelineFFI<'a> {
     ) -> Result<Self> {
         let model = SequenceClassificationPipeline::from_pretrained(
             env.env.clone(),
-            model_id.as_str().unwrap().to_string(),
+            model_id.as_c_str().unwrap().to_string_lossy().to_string(),
             device.into(),
             optimization.into(),
         )?;
@@ -107,8 +107,16 @@ impl<'a> SequenceClassificationPipelineFFI<'a> {
         let model = SequenceClassificationPipeline::new_from_memory(
             env.env.clone(),
             model.as_slice(),
-            tokenizer_config.as_str().unwrap().to_string(),
-            special_tokens_map.as_str().unwrap().to_string(),
+            tokenizer_config
+                .as_c_str()
+                .unwrap()
+                .to_string_lossy()
+                .to_string(),
+            special_tokens_map
+                .as_c_str()
+                .unwrap()
+                .to_string_lossy()
+                .to_string(),
             device.into(),
             optimization.into(),
             None,
@@ -132,9 +140,15 @@ impl<'a> SequenceClassificationPipelineFFI<'a> {
     ) -> Result<Self> {
         let model = SequenceClassificationPipeline::new_from_files(
             env.env.clone(),
-            Path::new(model_path.as_str().unwrap()).to_path_buf(),
-            Path::new(tokenizer_config_path.as_str().unwrap()).to_path_buf(),
-            Path::new(special_tokens_map_path.as_str().unwrap()).to_path_buf(),
+            Path::new(&*model_path.as_c_str().unwrap().to_string_lossy()).to_path_buf(),
+            Path::new(&*tokenizer_config_path.as_c_str().unwrap().to_string_lossy()).to_path_buf(),
+            Path::new(
+                &*special_tokens_map_path
+                    .as_c_str()
+                    .unwrap()
+                    .to_string_lossy(),
+            )
+            .to_path_buf(),
             device.into(),
             optimization.into(),
             None,
@@ -152,7 +166,10 @@ impl<'a> SequenceClassificationPipelineFFI<'a> {
         s: &'a mut SequenceClassificationPipelineFFI,
         input: AsciiPointer,
     ) -> PredictionFFI<'a> {
-        let output = s.model.classify(input.as_str().unwrap()).unwrap();
+        let output = s
+            .model
+            .classify(&*input.as_c_str().unwrap().to_string_lossy())
+            .unwrap();
         s.output_buf = vec![output];
         s.class_preds_buf_vec.push(
             s.output_buf

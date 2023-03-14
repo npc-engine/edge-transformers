@@ -135,7 +135,7 @@ impl StringBatch {
 
     #[ffi_service_method(on_panic = "ffi_error")]
     pub fn add(&mut self, add_string: AsciiPointer) -> Result<()> {
-        let add_string = add_string.as_str()?.to_string();
+        let add_string = add_string.as_c_str().unwrap().to_string_lossy().to_string();
         self.batch.push(add_string);
         Ok(())
     }

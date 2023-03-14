@@ -32,7 +32,7 @@ impl<'a> ConditionalGenerationPipelineWithPKVsFFI<'a> {
     ) -> Result<Self> {
         let model = ConditionalGenerationPipelineWithPKVs::from_pretrained(
             env.env.clone(),
-            model_id.as_str().unwrap().to_string(),
+            model_id.as_c_str().unwrap().to_string_lossy().to_string(),
             device.into(),
             optimization.into(),
         )?;
@@ -55,8 +55,16 @@ impl<'a> ConditionalGenerationPipelineWithPKVsFFI<'a> {
         let pipeline = ConditionalGenerationPipelineWithPKVs::new_from_memory(
             &env.env,
             model.as_slice(),
-            tokenizer_config.as_str().unwrap().to_string(),
-            special_tokens_map.as_str().unwrap().to_string(),
+            tokenizer_config
+                .as_c_str()
+                .unwrap()
+                .to_string_lossy()
+                .to_string(),
+            special_tokens_map
+                .as_c_str()
+                .unwrap()
+                .to_string_lossy()
+                .to_string(),
             device.into(),
             optimization.into(),
         )?;
@@ -78,9 +86,21 @@ impl<'a> ConditionalGenerationPipelineWithPKVsFFI<'a> {
     ) -> Result<Self> {
         let model = ConditionalGenerationPipelineWithPKVs::new_from_files(
             env.env.clone(),
-            PathBuf::from(model.as_str().unwrap()),
-            PathBuf::from(tokenizer_config.as_str().unwrap()),
-            PathBuf::from(special_tokens_map.as_str().unwrap()),
+            PathBuf::from(model.as_c_str().unwrap().to_string_lossy().to_string()),
+            PathBuf::from(
+                tokenizer_config
+                    .as_c_str()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string(),
+            ),
+            PathBuf::from(
+                special_tokens_map
+                    .as_c_str()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string(),
+            ),
             device.into(),
             optimization.into(),
         )?;
@@ -102,7 +122,11 @@ impl<'a> ConditionalGenerationPipelineWithPKVsFFI<'a> {
         let sampler = TopKSampler::new(topk as usize, temperature);
         let output = self
             .model
-            .generate(input.as_str().unwrap(), max_length, &sampler)
+            .generate(
+                &*input.as_c_str().unwrap().to_string_lossy(),
+                max_length,
+                &sampler,
+            )
             .unwrap();
         AsciiPointer::from_slice_with_nul(CString::new(output).unwrap().to_bytes_with_nul())
             .expect("Failed to convert CString to AsciiPointer")
@@ -118,7 +142,11 @@ impl<'a> ConditionalGenerationPipelineWithPKVsFFI<'a> {
         let sampler = RandomSampler::new(temperature);
         let output = self
             .model
-            .generate(input.as_str().unwrap(), max_length, &sampler)
+            .generate(
+                &*input.as_c_str().unwrap().to_string_lossy(),
+                max_length,
+                &sampler,
+            )
             .unwrap();
         AsciiPointer::from_slice_with_nul(CString::new(output).unwrap().to_bytes_with_nul())
             .expect("Failed to convert CString to AsciiPointer")
@@ -133,7 +161,11 @@ impl<'a> ConditionalGenerationPipelineWithPKVsFFI<'a> {
         let sampler = ArgmaxSampler::new();
         let output = self
             .model
-            .generate(input.as_str().unwrap(), max_length, &sampler)
+            .generate(
+                &*input.as_c_str().unwrap().to_string_lossy(),
+                max_length,
+                &sampler,
+            )
             .unwrap();
         AsciiPointer::from_slice_with_nul(CString::new(output).unwrap().to_bytes_with_nul())
             .expect("Failed to convert CString to AsciiPointer")
@@ -236,8 +268,9 @@ mod test {
         .unwrap();
 
         let output = pipeline.generate_topk_sampling(
-            AsciiPointer::from_slice_with_nul(b"translate English to French: How old are you?\0")
-                .unwrap(),
+            AsciiPointer::from_slice_with_nul(
+                CString::new("translate English to French: How old are you?")?.to_bytes_with_nul(),
+            )?,
             32,
             5,
             1.0,

@@ -114,7 +114,7 @@
 //     ) -> Result<Self> {
 //         let model = TokenClassificationPipeline::from_pretrained(
 //             env.env.clone(),
-//             model_id.as_str().unwrap().to_string(),
+//             model_id.as_c_str().unwrap().to_string_lossy().to_string(),
 //             device.into(),
 //             optimization.into(),
 //         )?;
@@ -139,8 +139,8 @@
 //         let model = TokenClassificationPipeline::new_from_memory(
 //             env.env.clone(),
 //             model.as_slice::<'a>(),
-//             tokenizer_config.as_str().unwrap().to_string(),
-//             special_tokens_map.as_str().unwrap().to_string(),
+//             tokenizer_config.as_c_str().unwrap().to_string_lossy().to_string(),
+//             special_tokens_map.as_c_str().unwrap().to_string_lossy().to_string(),
 //             device.into(),
 //             optimization.into(),
 //             None,
@@ -165,9 +165,9 @@
 //     ) -> Result<Self> {
 //         let model = TokenClassificationPipeline::new_from_files(
 //             env.env.clone(),
-//             Path::new(model_path.as_str().unwrap()).to_path_buf(),
-//             Path::new(tokenizer_config_path.as_str().unwrap()).to_path_buf(),
-//             Path::new(special_tokens_map_path.as_str().unwrap()).to_path_buf(),
+//             Path::new(model_path.as_c_str().unwrap().to_string_lossy()).to_path_buf(),
+//             Path::new(tokenizer_config_path.as_c_str().unwrap().to_string_lossy()).to_path_buf(),
+//             Path::new(special_tokens_map_path.as_c_str().unwrap().to_string_lossy()).to_path_buf(),
 //             device.into(),
 //             optimization.into(),
 //             None,
@@ -186,7 +186,7 @@
 //         s: &'a mut TokenClassificationPipelineFFI<'a>,
 //         input: AsciiPointer,
 //     ) -> TaggedStringFFI<'a> {
-//         let output = s.model.tag(input.as_str().unwrap()).unwrap();
+//         let output = s.model.tag(input.as_c_str().unwrap().to_string_lossy()).unwrap();
 //         s.output_buf = vec![output];
 //         s.prediction_all_buf_ffi = vec![s.output_buf[0]
 //             .tags

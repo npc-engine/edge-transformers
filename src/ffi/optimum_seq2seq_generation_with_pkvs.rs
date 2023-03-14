@@ -33,7 +33,7 @@ impl<'a> OptimumSeq2SeqPipelineWithPKVsFFI<'a> {
     ) -> Result<Self> {
         let model = OptimumSeq2SeqPipelineWithPKVs::from_pretrained(
             env.env.clone(),
-            model_id.as_str().unwrap().to_string(),
+            model_id.as_c_str().unwrap().to_string_lossy().to_string(),
             device.into(),
             optimization.into(),
         )?;
@@ -60,8 +60,16 @@ impl<'a> OptimumSeq2SeqPipelineWithPKVsFFI<'a> {
             encoder_model.as_slice().clone(),
             decoder_model.as_slice().clone(),
             decoder_model_pkvs.as_slice().clone(),
-            tokenizer_config.as_str().unwrap().to_string(),
-            special_tokens_map.as_str().unwrap().to_string(),
+            tokenizer_config
+                .as_c_str()
+                .unwrap()
+                .to_string_lossy()
+                .to_string(),
+            special_tokens_map
+                .as_c_str()
+                .unwrap()
+                .to_string_lossy()
+                .to_string(),
             device.into(),
             optimization_level.into(),
         )?;
@@ -85,11 +93,23 @@ impl<'a> OptimumSeq2SeqPipelineWithPKVsFFI<'a> {
     ) -> Result<Self> {
         let model = OptimumSeq2SeqPipelineWithPKVs::new_from_files(
             env.env.clone(),
-            Path::new(encoder_model_path.as_str().unwrap()).to_path_buf(),
-            Path::new(decoder_model_path.as_str().unwrap()).to_path_buf(),
-            Path::new(decoder_model_pkvs_path.as_str().unwrap()).to_path_buf(),
-            Path::new(tokenizer_config_path.as_str().unwrap()).to_path_buf(),
-            Path::new(special_tokens_map_path.as_str().unwrap()).to_path_buf(),
+            Path::new(&*encoder_model_path.as_c_str().unwrap().to_string_lossy()).to_path_buf(),
+            Path::new(&*decoder_model_path.as_c_str().unwrap().to_string_lossy()).to_path_buf(),
+            Path::new(
+                &*decoder_model_pkvs_path
+                    .as_c_str()
+                    .unwrap()
+                    .to_string_lossy(),
+            )
+            .to_path_buf(),
+            Path::new(&*tokenizer_config_path.as_c_str().unwrap().to_string_lossy()).to_path_buf(),
+            Path::new(
+                &*special_tokens_map_path
+                    .as_c_str()
+                    .unwrap()
+                    .to_string_lossy(),
+            )
+            .to_path_buf(),
             device.into(),
             optimization_level.into(),
         )?;
@@ -110,11 +130,14 @@ impl<'a> OptimumSeq2SeqPipelineWithPKVsFFI<'a> {
         temperature: f32,
     ) -> AsciiPointer<'a> {
         let sampler = TopKSampler::new(topk as usize, temperature);
+        let decoder_input = decoder_input
+            .into_option()
+            .map(|s| s.as_c_str().unwrap().to_string_lossy().to_string());
         let output = self
             .model
             .generate(
-                input.as_str().unwrap(),
-                decoder_input.into_option().map(|s| s.as_str().unwrap()),
+                &*input.as_c_str().unwrap().to_string_lossy(),
+                decoder_input.as_ref().map(|s| &**s),
                 max_length,
                 &sampler,
             )
@@ -132,11 +155,14 @@ impl<'a> OptimumSeq2SeqPipelineWithPKVsFFI<'a> {
         temperature: f32,
     ) -> AsciiPointer<'a> {
         let sampler = RandomSampler::new(temperature);
+        let decoder_input = decoder_input
+            .into_option()
+            .map(|s| s.as_c_str().unwrap().to_string_lossy().to_string());
         let output = self
             .model
             .generate(
-                input.as_str().unwrap(),
-                decoder_input.into_option().map(|s| s.as_str().unwrap()),
+                &*input.as_c_str().unwrap().to_string_lossy(),
+                decoder_input.as_ref().map(|s| &**s),
                 max_length,
                 &sampler,
             )
@@ -154,11 +180,14 @@ impl<'a> OptimumSeq2SeqPipelineWithPKVsFFI<'a> {
         max_length: i32,
     ) -> AsciiPointer<'a> {
         let sampler = ArgmaxSampler::new();
+        let decoder_input = decoder_input
+            .into_option()
+            .map(|s| s.as_c_str().unwrap().to_string_lossy().to_string());
         let output = self
             .model
             .generate(
-                input.as_str().unwrap(),
-                decoder_input.into_option().map(|s| s.as_str().unwrap()),
+                &*input.as_c_str().unwrap().to_string_lossy(),
+                decoder_input.as_ref().map(|s| &**s),
                 max_length,
                 &sampler,
             )
@@ -284,7 +313,10 @@ mod test {
             5,
             1.0,
         );
-        println!("{}", output.as_str()?.to_string());
+        println!(
+            "{}",
+            output.as_c_str().unwrap().to_string_lossy().to_string()
+        );
         Ok(())
     }
 
