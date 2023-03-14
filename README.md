@@ -109,40 +109,9 @@ println!("{}", pipeline.generate(input, 10, &sampler).unwrap());
 - [ ] More pipelines (e.g. extractive QA, ASR, etc.)
 - [ ] Better huggingface config.json parsing
 
-## Building ONNX Runtime fork
+## Building
 
-While proper CI/CD for [ONNX Runtime fork](https://github.com/npc-engine/onnxruntime-rs) 
-that is used in this project is not set up, you have to build correct 
-[onnxruntime](https://onnxruntime.ai/) dlls and replace them manually:
-
-- Clone ONNX Runtime fork
-```bash
-git clone https://github.com/npc-engine/onnxruntime-rs
-```
-- Replace `onnxruntime.dll` and `onnxruntime.lib` with the ones built for your platform/execution provider.
-```bash
-cp $PATH_TO_ONNXRUNTIME_DLL/onnxruntime.* onnxruntime-rs/onnxruntime-sys/lib/onnxruntime.dll
-```
-- Point `edge-transformers` to your local `onnxruntime-rs` folder by modifying `Cargo.toml`.
-```cargo
-onnxruntime = { path = "<path to repo>/onnxruntime-rs" }
-onnxruntime-sys = { path = "<path to repo>/onnxruntime-rs" }
-```
-- Build `edge-transformers` with correct feature flags (add if needed)
-- (Optional) add new provider to `onnxruntime-rs/onnxruntime/src/session.rs`.  
-You can find correct OrtSessionOptionsAppendExecutionProvider_{} function name in 
-[onnxruntime repo](https://github.com/microsoft/onnxruntime)
-```csharp
-e.g.
-    /// Set the session to use cuda if feature cuda and not tensorrt
-    #[cfg(feature = "your_provider_feature")]
-    pub fn use_my_provider(self, device_id: i32) -> Result<SessionBuilder<'a>> {
-        unsafe {
-            sys::OrtSessionOptionsAppendExecutionProvider_YOURPROVIDER(self.session_options_ptr, device_id);
-        }
-        Ok(self)
-    }
-```
+Please refer to [ONNX Runtime bindings](https://github.com/pykeio/ort) docs on detailed how to.
 
 ## Testing 
 
