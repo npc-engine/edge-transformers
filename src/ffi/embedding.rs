@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use std::path::Path;
+use std::rc::Rc;
 
 use interoptopus::patterns::slice::FFISlice;
 use interoptopus::patterns::string::AsciiPointer;
@@ -56,7 +57,7 @@ impl<'a> From<&'a Embedding> for EmbeddingFFI<'a> {
     }
 }
 
-#[ffi_type(opaque, name = "EmbeddingPipeline")]
+#[ffi_type(opaque)]
 pub struct EmbeddingPipelineFFI<'a> {
     pub model: EmbeddingPipeline<'a>,
     output_buf: Vec<Embedding>,
@@ -76,40 +77,6 @@ impl<'a> EmbeddingPipelineFFI<'a> {
         let model = EmbeddingPipeline::from_pretrained(
             env.env.clone(),
             model_id.as_c_str().unwrap().to_string_lossy().to_string(),
-            pooling_strategy.into(),
-            device.into(),
-            optimization.into(),
-        )?;
-        Ok(Self {
-            model,
-            output_buf: Vec::new(),
-            vec_output_buf: Vec::new(),
-        })
-    }
-
-    #[ffi_service_ctor]
-    pub fn create_from_memory(
-        env: &'a EnvContainer,
-        model: &&'a FFISlice<'a, u8>,
-        tokenizer_config: AsciiPointer<'a>,
-        special_tokens_map: AsciiPointer<'a>,
-        pooling_strategy: PoolingStrategyFFI,
-        device: DeviceFFI,
-        optimization: GraphOptimizationLevelFFI,
-    ) -> Result<Self> {
-        let model = EmbeddingPipeline::new_from_memory(
-            &env.env,
-            model.as_slice(),
-            tokenizer_config
-                .as_c_str()
-                .unwrap()
-                .to_string_lossy()
-                .to_string(),
-            special_tokens_map
-                .as_c_str()
-                .unwrap()
-                .to_string_lossy()
-                .to_string(),
             pooling_strategy.into(),
             device.into(),
             optimization.into(),

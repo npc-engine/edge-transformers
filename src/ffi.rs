@@ -25,7 +25,7 @@ pub mod token_classification;
 // Environment wrapper
 
 /// Holds text embedding with model specific threshold for cosine similarity.
-#[ffi_type(opaque, name = "Environment")]
+#[ffi_type(opaque)]
 pub struct EnvContainer {
     pub env: Arc<Environment>,
 }
@@ -115,7 +115,7 @@ impl From<DeviceFFI> for Device {
 }
 
 #[repr(C)]
-#[ffi_type(opaque, name = "StringBatch")]
+#[ffi_type(opaque)]
 pub struct StringBatch {
     batch: Vec<String>,
 }
@@ -181,9 +181,9 @@ pub fn ffi_inventory() -> Inventory {
             // Embedding pipeline
             .register(pattern!(crate::ffi::embedding::EmbeddingPipelineFFI))
             // Sequence classification pipeline
+            .register(pattern!(crate::ffi::token_classification::TokenClassificationPipelineFFI))
             .register(pattern!(crate::ffi::sequence_classification::SequenceClassificationPipelineFFI))
             // Token classification pipeline
-            // .register(pattern!(crate::ffi::token_classification::TokenClassificationPipelineFFI))
             // Seq2Seq pipeline
             .register(pattern!(crate::ffi::optimum_seq2seq_generation::OptimumSeq2SeqPipelineFFI))
             .register(pattern!(crate::ffi::optimum_seq2seq_generation_with_pkvs::OptimumSeq2SeqPipelineWithPKVsFFI))

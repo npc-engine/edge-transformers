@@ -5,10 +5,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using EdgeTransformers;
+using EdgeTransformers.FFI;
 #pragma warning restore 0105
 
-namespace EdgeTransformers
+namespace EdgeTransformers.FFI
 {
     public static partial class Interop
     {
@@ -67,9 +67,6 @@ namespace EdgeTransformers
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_cond_gen_from_pretrained")]
         public static extern FFIError onnx_cond_gen_from_pretrained(ref IntPtr context, IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization);
 
-        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_cond_gen_create_from_memory")]
-        public static extern FFIError onnx_cond_gen_create_from_memory(ref IntPtr context, IntPtr env, ref Sliceu8 model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization);
-
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_cond_gen_create_from_files")]
         public static extern FFIError onnx_cond_gen_create_from_files(ref IntPtr context, IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization);
 
@@ -102,9 +99,6 @@ namespace EdgeTransformers
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_cond_gen_pkvs_from_pretrained")]
         public static extern FFIError onnx_cond_gen_pkvs_from_pretrained(ref IntPtr context, IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization);
-
-        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_cond_gen_pkvs_create_from_memory")]
-        public static extern FFIError onnx_cond_gen_pkvs_create_from_memory(ref IntPtr context, IntPtr env, ref IntPtr model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_cond_gen_pkvs_create_from_paths")]
         public static extern FFIError onnx_cond_gen_pkvs_create_from_paths(ref IntPtr context, IntPtr env, string model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization);
@@ -139,9 +133,6 @@ namespace EdgeTransformers
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_emb_from_pretrained")]
         public static extern FFIError onnx_emb_from_pretrained(ref IntPtr context, IntPtr env, string model_id, PoolingStrategyFFI pooling_strategy, DeviceFFI device, GraphOptimizationLevelFFI optimization);
 
-        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_emb_create_from_memory")]
-        public static extern FFIError onnx_emb_create_from_memory(ref IntPtr context, IntPtr env, ref IntPtr model, string tokenizer_config, string special_tokens_map, PoolingStrategyFFI pooling_strategy, DeviceFFI device, GraphOptimizationLevelFFI optimization);
-
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_emb_create_from_files")]
         public static extern FFIError onnx_emb_create_from_files(ref IntPtr context, IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, PoolingStrategyFFI pooling_strategy, DeviceFFI device, GraphOptimizationLevelFFI optimization);
 
@@ -157,14 +148,32 @@ namespace EdgeTransformers
         ///
         /// The passed parameter MUST have been created with the corresponding init function;
         /// passing any other value results in undefined behavior.
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_token_classification_destroy")]
+        public static extern FFIError onnx_token_classification_destroy(ref IntPtr context);
+
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_token_classification_from_pretrained")]
+        public static extern FFIError onnx_token_classification_from_pretrained(ref IntPtr context, IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization);
+
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_token_classification_create_from_files")]
+        public static extern FFIError onnx_token_classification_create_from_files(ref IntPtr context, IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization);
+
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_token_classification_tag")]
+        public static extern TaggedStringFFI onnx_token_classification_tag(IntPtr s, string input);
+
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_token_classification_tag_batch")]
+        public static extern SliceTaggedStringFFI onnx_token_classification_tag_batch(IntPtr s, IntPtr input);
+
+        /// Destroys the given instance.
+        ///
+        /// # Safety
+        ///
+        /// The passed parameter MUST have been created with the corresponding init function;
+        /// passing any other value results in undefined behavior.
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_classification_destroy")]
         public static extern FFIError onnx_classification_destroy(ref IntPtr context);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_classification_from_pretrained")]
         public static extern FFIError onnx_classification_from_pretrained(ref IntPtr context, IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization);
-
-        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_classification_create_from_memory")]
-        public static extern FFIError onnx_classification_create_from_memory(ref IntPtr context, IntPtr env, ref Sliceu8 model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_classification_create_from_files")]
         public static extern FFIError onnx_classification_create_from_files(ref IntPtr context, IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization);
@@ -187,20 +196,17 @@ namespace EdgeTransformers
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_from_pretrained")]
         public static extern FFIError onnx_optimum_seq2seq_from_pretrained(ref IntPtr context, IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization);
 
-        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_create_from_memory")]
-        public static extern FFIError onnx_optimum_seq2seq_create_from_memory(ref IntPtr context, IntPtr env, ref Sliceu8 encoder_model, ref Sliceu8 decoder_model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization);
-
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_create_from_files")]
         public static extern FFIError onnx_optimum_seq2seq_create_from_files(ref IntPtr context, IntPtr env, string encoder_model_path, string decoder_model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_generate_topk_sampling")]
-        public static extern IntPtr onnx_optimum_seq2seq_generate_topk_sampling(IntPtr context, string input, Option*const i8 decoder_input, int max_length, int topk, float temperature);
+        public static extern IntPtr onnx_optimum_seq2seq_generate_topk_sampling(IntPtr context, string input, string decoder_input, int max_length, int topk, float temperature);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_generate_random_sampling")]
-        public static extern IntPtr onnx_optimum_seq2seq_generate_random_sampling(IntPtr context, string input, Option*const i8 decoder_input, int max_length, float temperature);
+        public static extern IntPtr onnx_optimum_seq2seq_generate_random_sampling(IntPtr context, string input, string decoder_input, int max_length, float temperature);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_generate_argmax")]
-        public static extern IntPtr onnx_optimum_seq2seq_generate_argmax(IntPtr context, string input, Option*const i8 decoder_input, int max_length);
+        public static extern IntPtr onnx_optimum_seq2seq_generate_argmax(IntPtr context, string input, string decoder_input, int max_length);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_generate_topk_sampling_batch")]
         public static extern SliceUseAsciiStringPattern onnx_optimum_seq2seq_generate_topk_sampling_batch(IntPtr s, IntPtr input, OptionStringBatch decoder_input, int max_length, int topk, float temperature);
@@ -223,20 +229,17 @@ namespace EdgeTransformers
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_pkvs_from_pretrained")]
         public static extern FFIError onnx_optimum_seq2seq_pkvs_from_pretrained(ref IntPtr context, IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization);
 
-        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_pkvs_create_from_memory")]
-        public static extern FFIError onnx_optimum_seq2seq_pkvs_create_from_memory(ref IntPtr context, IntPtr env, ref Sliceu8 encoder_model, ref Sliceu8 decoder_model, ref Sliceu8 decoder_model_pkvs, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization_level);
-
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_pkvs_create_from_files")]
         public static extern FFIError onnx_optimum_seq2seq_pkvs_create_from_files(ref IntPtr context, IntPtr env, string encoder_model_path, string decoder_model_path, string decoder_model_pkvs_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization_level);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_pkvs_generate_topk_sampling")]
-        public static extern IntPtr onnx_optimum_seq2seq_pkvs_generate_topk_sampling(IntPtr context, string input, Option*const i8 decoder_input, int max_length, int topk, float temperature);
+        public static extern IntPtr onnx_optimum_seq2seq_pkvs_generate_topk_sampling(IntPtr context, string input, string decoder_input, int max_length, int topk, float temperature);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_pkvs_generate_random_sampling")]
-        public static extern IntPtr onnx_optimum_seq2seq_pkvs_generate_random_sampling(IntPtr context, string input, Option*const i8 decoder_input, int max_length, float temperature);
+        public static extern IntPtr onnx_optimum_seq2seq_pkvs_generate_random_sampling(IntPtr context, string input, string decoder_input, int max_length, float temperature);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_pkvs_generate_argmax")]
-        public static extern IntPtr onnx_optimum_seq2seq_pkvs_generate_argmax(IntPtr context, string input, Option*const i8 decoder_input, int max_length);
+        public static extern IntPtr onnx_optimum_seq2seq_pkvs_generate_argmax(IntPtr context, string input, string decoder_input, int max_length);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_optimum_seq2seq_pkvs_generate_topk_sampling_batch")]
         public static extern SliceUseAsciiStringPattern onnx_optimum_seq2seq_pkvs_generate_topk_sampling_batch(IntPtr s, IntPtr input, OptionStringBatch decoder_input, int max_length, int topk, float temperature);
@@ -259,20 +262,17 @@ namespace EdgeTransformers
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_seq2seq_from_pretrained")]
         public static extern FFIError onnx_seq2seq_from_pretrained(ref IntPtr context, IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization);
 
-        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_seq2seq_create_from_memory")]
-        public static extern FFIError onnx_seq2seq_create_from_memory(ref IntPtr context, IntPtr env, ref Sliceu8 model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization);
-
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_seq2seq_create_from_files")]
         public static extern FFIError onnx_seq2seq_create_from_files(ref IntPtr context, IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_seq2seq_generate_topk_sampling")]
-        public static extern IntPtr onnx_seq2seq_generate_topk_sampling(IntPtr context, string input, Option*const i8 decoder_input, int max_length, int topk, float temperature);
+        public static extern IntPtr onnx_seq2seq_generate_topk_sampling(IntPtr context, string input, string decoder_input, int max_length, int topk, float temperature);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_seq2seq_generate_random_sampling")]
-        public static extern IntPtr onnx_seq2seq_generate_random_sampling(IntPtr context, string input, Option*const i8 decoder_input, int max_length, float temperature);
+        public static extern IntPtr onnx_seq2seq_generate_random_sampling(IntPtr context, string input, string decoder_input, int max_length, float temperature);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_seq2seq_generate_argmax")]
-        public static extern IntPtr onnx_seq2seq_generate_argmax(IntPtr context, string input, Option*const i8 decoder_input, int max_length);
+        public static extern IntPtr onnx_seq2seq_generate_argmax(IntPtr context, string input, string decoder_input, int max_length);
 
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "onnx_seq2seq_generate_topk_sampling_batch")]
         public static extern SliceUseAsciiStringPattern onnx_seq2seq_generate_topk_sampling_batch(IntPtr s, IntPtr input, OptionStringBatch decoder_input, int max_length, int topk, float temperature);
@@ -327,6 +327,24 @@ namespace EdgeTransformers
     {
         public ClassPredictionFFI best;
         public SliceClassPredictionFFI all;
+    }
+
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct TaggedStringFFI
+    {
+        public string input_string;
+        public SliceTokenClassPredictionFFI tags;
+    }
+
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct TokenClassPredictionFFI
+    {
+        public ClassPredictionFFI best;
+        public SliceClassPredictionFFI all;
+        public uint start;
+        public uint end;
     }
 
     [Serializable]
@@ -524,6 +542,124 @@ namespace EdgeTransformers
     ///A pointer to an array of data someone else owns which may not be modified.
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
+    public partial struct SliceTaggedStringFFI
+    {
+        ///Pointer to start of immutable data.
+        IntPtr data;
+        ///Number of elements.
+        ulong len;
+    }
+
+    public partial struct SliceTaggedStringFFI : IEnumerable<TaggedStringFFI>
+    {
+        public SliceTaggedStringFFI(GCHandle handle, ulong count)
+        {
+            this.data = handle.AddrOfPinnedObject();
+            this.len = count;
+        }
+        public SliceTaggedStringFFI(IntPtr handle, ulong count)
+        {
+            this.data = handle;
+            this.len = count;
+        }
+        public TaggedStringFFI this[int i]
+        {
+            get
+            {
+                if (i >= Count) throw new IndexOutOfRangeException();
+                var size = Marshal.SizeOf(typeof(TaggedStringFFI));
+                var ptr = new IntPtr(data.ToInt64() + i * size);
+                return Marshal.PtrToStructure<TaggedStringFFI>(ptr);
+            }
+        }
+        public TaggedStringFFI[] Copied
+        {
+            get
+            {
+                var rval = new TaggedStringFFI[len];
+                for (var i = 0; i < (int) len; i++) {
+                    rval[i] = this[i];
+                }
+                return rval;
+            }
+        }
+        public int Count => (int) len;
+        public IEnumerator<TaggedStringFFI> GetEnumerator()
+        {
+            for (var i = 0; i < (int)len; ++i)
+            {
+                yield return this[i];
+            }
+        }
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
+    }
+
+
+    ///A pointer to an array of data someone else owns which may not be modified.
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct SliceTokenClassPredictionFFI
+    {
+        ///Pointer to start of immutable data.
+        IntPtr data;
+        ///Number of elements.
+        ulong len;
+    }
+
+    public partial struct SliceTokenClassPredictionFFI : IEnumerable<TokenClassPredictionFFI>
+    {
+        public SliceTokenClassPredictionFFI(GCHandle handle, ulong count)
+        {
+            this.data = handle.AddrOfPinnedObject();
+            this.len = count;
+        }
+        public SliceTokenClassPredictionFFI(IntPtr handle, ulong count)
+        {
+            this.data = handle;
+            this.len = count;
+        }
+        public TokenClassPredictionFFI this[int i]
+        {
+            get
+            {
+                if (i >= Count) throw new IndexOutOfRangeException();
+                var size = Marshal.SizeOf(typeof(TokenClassPredictionFFI));
+                var ptr = new IntPtr(data.ToInt64() + i * size);
+                return Marshal.PtrToStructure<TokenClassPredictionFFI>(ptr);
+            }
+        }
+        public TokenClassPredictionFFI[] Copied
+        {
+            get
+            {
+                var rval = new TokenClassPredictionFFI[len];
+                for (var i = 0; i < (int) len; i++) {
+                    rval[i] = this[i];
+                }
+                return rval;
+            }
+        }
+        public int Count => (int) len;
+        public IEnumerator<TokenClassPredictionFFI> GetEnumerator()
+        {
+            for (var i = 0; i < (int)len; ++i)
+            {
+                yield return this[i];
+            }
+        }
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
+    }
+
+
+    ///A pointer to an array of data someone else owns which may not be modified.
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
     public partial struct SliceUseAsciiStringPattern
     {
         ///Pointer to start of immutable data.
@@ -639,97 +775,6 @@ namespace EdgeTransformers
     }
 
 
-    ///A pointer to an array of data someone else owns which may not be modified.
-    [Serializable]
-    [StructLayout(LayoutKind.Sequential)]
-    public partial struct Sliceu8
-    {
-        ///Pointer to start of immutable data.
-        IntPtr data;
-        ///Number of elements.
-        ulong len;
-    }
-
-    public partial struct Sliceu8 : IEnumerable<byte>
-    {
-        public Sliceu8(GCHandle handle, ulong count)
-        {
-            this.data = handle.AddrOfPinnedObject();
-            this.len = count;
-        }
-        public Sliceu8(IntPtr handle, ulong count)
-        {
-            this.data = handle;
-            this.len = count;
-        }
-        public byte this[int i]
-        {
-            get
-            {
-                if (i >= Count) throw new IndexOutOfRangeException();
-                var size = Marshal.SizeOf(typeof(byte));
-                var ptr = new IntPtr(data.ToInt64() + i * size);
-                return Marshal.PtrToStructure<byte>(ptr);
-            }
-        }
-        public byte[] Copied
-        {
-            get
-            {
-                var rval = new byte[len];
-                for (var i = 0; i < (int) len; i++) {
-                    rval[i] = this[i];
-                }
-                return rval;
-            }
-        }
-        public int Count => (int) len;
-        public IEnumerator<byte> GetEnumerator()
-        {
-            for (var i = 0; i < (int)len; ++i)
-            {
-                yield return this[i];
-            }
-        }
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator();
-        }
-    }
-
-
-    ///Option type containing boolean flag and maybe valid data.
-    [Serializable]
-    [StructLayout(LayoutKind.Sequential)]
-    public partial struct Option*const i8
-    {
-        ///Element that is maybe valid.
-        string t;
-        ///Byte where `1` means element `t` is valid.
-        byte is_some;
-    }
-
-    public partial struct Option*const i8
-    {
-        public static Option*const i8 FromNullable(IntPtr? nullable)
-        {
-            var result = new Option*const i8();
-            if (nullable.HasValue)
-            {
-                result.is_some = 1;
-                result.t = nullable.Value;
-            }
-
-            return result;
-        }
-
-        public IntPtr? ToNullable()
-        {
-            return this.is_some == 1 ? this.t : (IntPtr?)null;
-        }
-    }
-
-
     ///Option type containing boolean flag and maybe valid data.
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
@@ -764,15 +809,15 @@ namespace EdgeTransformers
 
 
     /// Holds text embedding with model specific threshold for cosine similarity.
-    public partial class Environment : IDisposable
+    public partial class EnvContainer : IDisposable
     {
         private IntPtr _context;
 
-        private Environment() {}
+        private EnvContainer() {}
 
-        public static Environment New()
+        public static EnvContainer New()
         {
-            var self = new Environment();
+            var self = new EnvContainer();
             var rval = Interop.onnx_env_new(ref self._context);
             if (rval != FFIError.Ok)
             {
@@ -853,15 +898,15 @@ namespace EdgeTransformers
     }
 
 
-    public partial class ConditionalGenerationPipeline : IDisposable
+    public partial class ConditionalGenerationPipelineFFI : IDisposable
     {
         private IntPtr _context;
 
-        private ConditionalGenerationPipeline() {}
+        private ConditionalGenerationPipelineFFI() {}
 
-        public static ConditionalGenerationPipeline FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static ConditionalGenerationPipelineFFI FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new ConditionalGenerationPipeline();
+            var self = new ConditionalGenerationPipelineFFI();
             var rval = Interop.onnx_cond_gen_from_pretrained(ref self._context, env, model_id, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -870,20 +915,9 @@ namespace EdgeTransformers
             return self;
         }
 
-        public static ConditionalGenerationPipeline CreateFromMemory(IntPtr env, ref Sliceu8 model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static ConditionalGenerationPipelineFFI CreateFromFiles(IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new ConditionalGenerationPipeline();
-            var rval = Interop.onnx_cond_gen_create_from_memory(ref self._context, env, ref model, tokenizer_config, special_tokens_map, device, optimization);
-            if (rval != FFIError.Ok)
-            {
-                throw new InteropException<FFIError>(rval);
-            }
-            return self;
-        }
-
-        public static ConditionalGenerationPipeline CreateFromFiles(IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization)
-        {
-            var self = new ConditionalGenerationPipeline();
+            var self = new ConditionalGenerationPipelineFFI();
             var rval = Interop.onnx_cond_gen_create_from_files(ref self._context, env, model_path, tokenizer_config_path, special_tokens_map_path, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -938,15 +972,15 @@ namespace EdgeTransformers
     }
 
 
-    public partial class ConditionalGenerationPipelineWithPKVs : IDisposable
+    public partial class ConditionalGenerationPipelineWithPKVsFFI : IDisposable
     {
         private IntPtr _context;
 
-        private ConditionalGenerationPipelineWithPKVs() {}
+        private ConditionalGenerationPipelineWithPKVsFFI() {}
 
-        public static ConditionalGenerationPipelineWithPKVs FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static ConditionalGenerationPipelineWithPKVsFFI FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new ConditionalGenerationPipelineWithPKVs();
+            var self = new ConditionalGenerationPipelineWithPKVsFFI();
             var rval = Interop.onnx_cond_gen_pkvs_from_pretrained(ref self._context, env, model_id, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -955,20 +989,9 @@ namespace EdgeTransformers
             return self;
         }
 
-        public static ConditionalGenerationPipelineWithPKVs CreateFromMemory(IntPtr env, ref IntPtr model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static ConditionalGenerationPipelineWithPKVsFFI CreateFromPaths(IntPtr env, string model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new ConditionalGenerationPipelineWithPKVs();
-            var rval = Interop.onnx_cond_gen_pkvs_create_from_memory(ref self._context, env, ref model, tokenizer_config, special_tokens_map, device, optimization);
-            if (rval != FFIError.Ok)
-            {
-                throw new InteropException<FFIError>(rval);
-            }
-            return self;
-        }
-
-        public static ConditionalGenerationPipelineWithPKVs CreateFromPaths(IntPtr env, string model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization)
-        {
-            var self = new ConditionalGenerationPipelineWithPKVs();
+            var self = new ConditionalGenerationPipelineWithPKVsFFI();
             var rval = Interop.onnx_cond_gen_pkvs_create_from_paths(ref self._context, env, model, tokenizer_config, special_tokens_map, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -1023,15 +1046,15 @@ namespace EdgeTransformers
     }
 
 
-    public partial class EmbeddingPipeline : IDisposable
+    public partial class EmbeddingPipelineFFI : IDisposable
     {
         private IntPtr _context;
 
-        private EmbeddingPipeline() {}
+        private EmbeddingPipelineFFI() {}
 
-        public static EmbeddingPipeline FromPretrained(IntPtr env, string model_id, PoolingStrategyFFI pooling_strategy, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static EmbeddingPipelineFFI FromPretrained(IntPtr env, string model_id, PoolingStrategyFFI pooling_strategy, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new EmbeddingPipeline();
+            var self = new EmbeddingPipelineFFI();
             var rval = Interop.onnx_emb_from_pretrained(ref self._context, env, model_id, pooling_strategy, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -1040,20 +1063,9 @@ namespace EdgeTransformers
             return self;
         }
 
-        public static EmbeddingPipeline CreateFromMemory(IntPtr env, ref IntPtr model, string tokenizer_config, string special_tokens_map, PoolingStrategyFFI pooling_strategy, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static EmbeddingPipelineFFI CreateFromFiles(IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, PoolingStrategyFFI pooling_strategy, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new EmbeddingPipeline();
-            var rval = Interop.onnx_emb_create_from_memory(ref self._context, env, ref model, tokenizer_config, special_tokens_map, pooling_strategy, device, optimization);
-            if (rval != FFIError.Ok)
-            {
-                throw new InteropException<FFIError>(rval);
-            }
-            return self;
-        }
-
-        public static EmbeddingPipeline CreateFromFiles(IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, PoolingStrategyFFI pooling_strategy, DeviceFFI device, GraphOptimizationLevelFFI optimization)
-        {
-            var self = new EmbeddingPipeline();
+            var self = new EmbeddingPipelineFFI();
             var rval = Interop.onnx_emb_create_from_files(ref self._context, env, model_path, tokenizer_config_path, special_tokens_map_path, pooling_strategy, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -1085,15 +1097,66 @@ namespace EdgeTransformers
     }
 
 
-    public partial class SequenceClassificationPipeline : IDisposable
+    public partial class TokenClassificationPipelineFFI : IDisposable
     {
         private IntPtr _context;
 
-        private SequenceClassificationPipeline() {}
+        private TokenClassificationPipelineFFI() {}
 
-        public static SequenceClassificationPipeline FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static TokenClassificationPipelineFFI FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new SequenceClassificationPipeline();
+            var self = new TokenClassificationPipelineFFI();
+            var rval = Interop.onnx_token_classification_from_pretrained(ref self._context, env, model_id, device, optimization);
+            if (rval != FFIError.Ok)
+            {
+                throw new InteropException<FFIError>(rval);
+            }
+            return self;
+        }
+
+        public static TokenClassificationPipelineFFI CreateFromFiles(IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        {
+            var self = new TokenClassificationPipelineFFI();
+            var rval = Interop.onnx_token_classification_create_from_files(ref self._context, env, model_path, tokenizer_config_path, special_tokens_map_path, device, optimization);
+            if (rval != FFIError.Ok)
+            {
+                throw new InteropException<FFIError>(rval);
+            }
+            return self;
+        }
+
+        public void Dispose()
+        {
+            var rval = Interop.onnx_token_classification_destroy(ref _context);
+            if (rval != FFIError.Ok)
+            {
+                throw new InteropException<FFIError>(rval);
+            }
+        }
+
+        public TaggedStringFFI Tag(string input)
+        {
+            return Interop.onnx_token_classification_tag(_context, input);
+        }
+
+        public SliceTaggedStringFFI TagBatch(IntPtr input)
+        {
+            return Interop.onnx_token_classification_tag_batch(_context, input);
+        }
+
+        public IntPtr Context => _context;
+    }
+
+
+    public partial class SequenceClassificationPipelineFFI : IDisposable
+    {
+        private IntPtr _context;
+
+        private SequenceClassificationPipelineFFI() {}
+
+        public static SequenceClassificationPipelineFFI FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        {
+            var self = new SequenceClassificationPipelineFFI();
             var rval = Interop.onnx_classification_from_pretrained(ref self._context, env, model_id, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -1102,20 +1165,9 @@ namespace EdgeTransformers
             return self;
         }
 
-        public static SequenceClassificationPipeline CreateFromMemory(IntPtr env, ref Sliceu8 model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static SequenceClassificationPipelineFFI CreateFromFiles(IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new SequenceClassificationPipeline();
-            var rval = Interop.onnx_classification_create_from_memory(ref self._context, env, ref model, tokenizer_config, special_tokens_map, device, optimization);
-            if (rval != FFIError.Ok)
-            {
-                throw new InteropException<FFIError>(rval);
-            }
-            return self;
-        }
-
-        public static SequenceClassificationPipeline CreateFromFiles(IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization)
-        {
-            var self = new SequenceClassificationPipeline();
+            var self = new SequenceClassificationPipelineFFI();
             var rval = Interop.onnx_classification_create_from_files(ref self._context, env, model_path, tokenizer_config_path, special_tokens_map_path, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -1147,15 +1199,15 @@ namespace EdgeTransformers
     }
 
 
-    public partial class OptimumSeq2SeqPipeline : IDisposable
+    public partial class OptimumSeq2SeqPipelineFFI : IDisposable
     {
         private IntPtr _context;
 
-        private OptimumSeq2SeqPipeline() {}
+        private OptimumSeq2SeqPipelineFFI() {}
 
-        public static OptimumSeq2SeqPipeline FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static OptimumSeq2SeqPipelineFFI FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new OptimumSeq2SeqPipeline();
+            var self = new OptimumSeq2SeqPipelineFFI();
             var rval = Interop.onnx_optimum_seq2seq_from_pretrained(ref self._context, env, model_id, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -1164,20 +1216,9 @@ namespace EdgeTransformers
             return self;
         }
 
-        public static OptimumSeq2SeqPipeline CreateFromMemory(IntPtr env, ref Sliceu8 encoder_model, ref Sliceu8 decoder_model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static OptimumSeq2SeqPipelineFFI CreateFromFiles(IntPtr env, string encoder_model_path, string decoder_model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new OptimumSeq2SeqPipeline();
-            var rval = Interop.onnx_optimum_seq2seq_create_from_memory(ref self._context, env, ref encoder_model, ref decoder_model, tokenizer_config, special_tokens_map, device, optimization);
-            if (rval != FFIError.Ok)
-            {
-                throw new InteropException<FFIError>(rval);
-            }
-            return self;
-        }
-
-        public static OptimumSeq2SeqPipeline CreateFromFiles(IntPtr env, string encoder_model_path, string decoder_model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization)
-        {
-            var self = new OptimumSeq2SeqPipeline();
+            var self = new OptimumSeq2SeqPipelineFFI();
             var rval = Interop.onnx_optimum_seq2seq_create_from_files(ref self._context, env, encoder_model_path, decoder_model_path, tokenizer_config_path, special_tokens_map_path, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -1195,19 +1236,19 @@ namespace EdgeTransformers
             }
         }
 
-        public string GenerateTopkSampling(string input, Option*const i8 decoder_input, int max_length, int topk, float temperature)
+        public string GenerateTopkSampling(string input, string decoder_input, int max_length, int topk, float temperature)
         {
             var s = Interop.onnx_optimum_seq2seq_generate_topk_sampling(_context, input, decoder_input, max_length, topk, temperature);
             return Marshal.PtrToStringAnsi(s);
         }
 
-        public string GenerateRandomSampling(string input, Option*const i8 decoder_input, int max_length, float temperature)
+        public string GenerateRandomSampling(string input, string decoder_input, int max_length, float temperature)
         {
             var s = Interop.onnx_optimum_seq2seq_generate_random_sampling(_context, input, decoder_input, max_length, temperature);
             return Marshal.PtrToStringAnsi(s);
         }
 
-        public string GenerateArgmax(string input, Option*const i8 decoder_input, int max_length)
+        public string GenerateArgmax(string input, string decoder_input, int max_length)
         {
             var s = Interop.onnx_optimum_seq2seq_generate_argmax(_context, input, decoder_input, max_length);
             return Marshal.PtrToStringAnsi(s);
@@ -1232,15 +1273,15 @@ namespace EdgeTransformers
     }
 
 
-    public partial class OptimumSeq2SeqPipelineWithPKVs : IDisposable
+    public partial class OptimumSeq2SeqPipelineWithPKVsFFI : IDisposable
     {
         private IntPtr _context;
 
-        private OptimumSeq2SeqPipelineWithPKVs() {}
+        private OptimumSeq2SeqPipelineWithPKVsFFI() {}
 
-        public static OptimumSeq2SeqPipelineWithPKVs FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static OptimumSeq2SeqPipelineWithPKVsFFI FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new OptimumSeq2SeqPipelineWithPKVs();
+            var self = new OptimumSeq2SeqPipelineWithPKVsFFI();
             var rval = Interop.onnx_optimum_seq2seq_pkvs_from_pretrained(ref self._context, env, model_id, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -1249,20 +1290,9 @@ namespace EdgeTransformers
             return self;
         }
 
-        public static OptimumSeq2SeqPipelineWithPKVs CreateFromMemory(IntPtr env, ref Sliceu8 encoder_model, ref Sliceu8 decoder_model, ref Sliceu8 decoder_model_pkvs, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization_level)
+        public static OptimumSeq2SeqPipelineWithPKVsFFI CreateFromFiles(IntPtr env, string encoder_model_path, string decoder_model_path, string decoder_model_pkvs_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization_level)
         {
-            var self = new OptimumSeq2SeqPipelineWithPKVs();
-            var rval = Interop.onnx_optimum_seq2seq_pkvs_create_from_memory(ref self._context, env, ref encoder_model, ref decoder_model, ref decoder_model_pkvs, tokenizer_config, special_tokens_map, device, optimization_level);
-            if (rval != FFIError.Ok)
-            {
-                throw new InteropException<FFIError>(rval);
-            }
-            return self;
-        }
-
-        public static OptimumSeq2SeqPipelineWithPKVs CreateFromFiles(IntPtr env, string encoder_model_path, string decoder_model_path, string decoder_model_pkvs_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization_level)
-        {
-            var self = new OptimumSeq2SeqPipelineWithPKVs();
+            var self = new OptimumSeq2SeqPipelineWithPKVsFFI();
             var rval = Interop.onnx_optimum_seq2seq_pkvs_create_from_files(ref self._context, env, encoder_model_path, decoder_model_path, decoder_model_pkvs_path, tokenizer_config_path, special_tokens_map_path, device, optimization_level);
             if (rval != FFIError.Ok)
             {
@@ -1280,19 +1310,19 @@ namespace EdgeTransformers
             }
         }
 
-        public string GenerateTopkSampling(string input, Option*const i8 decoder_input, int max_length, int topk, float temperature)
+        public string GenerateTopkSampling(string input, string decoder_input, int max_length, int topk, float temperature)
         {
             var s = Interop.onnx_optimum_seq2seq_pkvs_generate_topk_sampling(_context, input, decoder_input, max_length, topk, temperature);
             return Marshal.PtrToStringAnsi(s);
         }
 
-        public string GenerateRandomSampling(string input, Option*const i8 decoder_input, int max_length, float temperature)
+        public string GenerateRandomSampling(string input, string decoder_input, int max_length, float temperature)
         {
             var s = Interop.onnx_optimum_seq2seq_pkvs_generate_random_sampling(_context, input, decoder_input, max_length, temperature);
             return Marshal.PtrToStringAnsi(s);
         }
 
-        public string GenerateArgmax(string input, Option*const i8 decoder_input, int max_length)
+        public string GenerateArgmax(string input, string decoder_input, int max_length)
         {
             var s = Interop.onnx_optimum_seq2seq_pkvs_generate_argmax(_context, input, decoder_input, max_length);
             return Marshal.PtrToStringAnsi(s);
@@ -1317,15 +1347,15 @@ namespace EdgeTransformers
     }
 
 
-    public partial class Seq2SeqGenerationPipeline : IDisposable
+    public partial class Seq2SeqGenerationPipelineFFI : IDisposable
     {
         private IntPtr _context;
 
-        private Seq2SeqGenerationPipeline() {}
+        private Seq2SeqGenerationPipelineFFI() {}
 
-        public static Seq2SeqGenerationPipeline FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static Seq2SeqGenerationPipelineFFI FromPretrained(IntPtr env, string model_id, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new Seq2SeqGenerationPipeline();
+            var self = new Seq2SeqGenerationPipelineFFI();
             var rval = Interop.onnx_seq2seq_from_pretrained(ref self._context, env, model_id, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -1334,20 +1364,9 @@ namespace EdgeTransformers
             return self;
         }
 
-        public static Seq2SeqGenerationPipeline CreateFromMemory(IntPtr env, ref Sliceu8 model, string tokenizer_config, string special_tokens_map, DeviceFFI device, GraphOptimizationLevelFFI optimization)
+        public static Seq2SeqGenerationPipelineFFI CreateFromFiles(IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization)
         {
-            var self = new Seq2SeqGenerationPipeline();
-            var rval = Interop.onnx_seq2seq_create_from_memory(ref self._context, env, ref model, tokenizer_config, special_tokens_map, device, optimization);
-            if (rval != FFIError.Ok)
-            {
-                throw new InteropException<FFIError>(rval);
-            }
-            return self;
-        }
-
-        public static Seq2SeqGenerationPipeline CreateFromFiles(IntPtr env, string model_path, string tokenizer_config_path, string special_tokens_map_path, DeviceFFI device, GraphOptimizationLevelFFI optimization)
-        {
-            var self = new Seq2SeqGenerationPipeline();
+            var self = new Seq2SeqGenerationPipelineFFI();
             var rval = Interop.onnx_seq2seq_create_from_files(ref self._context, env, model_path, tokenizer_config_path, special_tokens_map_path, device, optimization);
             if (rval != FFIError.Ok)
             {
@@ -1365,19 +1384,19 @@ namespace EdgeTransformers
             }
         }
 
-        public string GenerateTopkSampling(string input, Option*const i8 decoder_input, int max_length, int topk, float temperature)
+        public string GenerateTopkSampling(string input, string decoder_input, int max_length, int topk, float temperature)
         {
             var s = Interop.onnx_seq2seq_generate_topk_sampling(_context, input, decoder_input, max_length, topk, temperature);
             return Marshal.PtrToStringAnsi(s);
         }
 
-        public string GenerateRandomSampling(string input, Option*const i8 decoder_input, int max_length, float temperature)
+        public string GenerateRandomSampling(string input, string decoder_input, int max_length, float temperature)
         {
             var s = Interop.onnx_seq2seq_generate_random_sampling(_context, input, decoder_input, max_length, temperature);
             return Marshal.PtrToStringAnsi(s);
         }
 
-        public string GenerateArgmax(string input, Option*const i8 decoder_input, int max_length)
+        public string GenerateArgmax(string input, string decoder_input, int max_length)
         {
             var s = Interop.onnx_seq2seq_generate_argmax(_context, input, decoder_input, max_length);
             return Marshal.PtrToStringAnsi(s);

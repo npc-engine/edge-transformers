@@ -1,6 +1,7 @@
 use std::borrow::Borrow;
 use std::ffi::CString;
 use std::path::Path;
+use std::rc::Rc;
 
 use interoptopus::patterns::slice::FFISlice;
 use interoptopus::patterns::string::AsciiPointer;
@@ -64,7 +65,7 @@ impl<'a> From<&ClassPrediction> for ClassPredictionFFI<'a> {
     }
 }
 
-#[ffi_type(opaque, name = "SequenceClassificationPipeline")]
+#[ffi_type(opaque)]
 pub struct SequenceClassificationPipelineFFI<'a> {
     pub model: SequenceClassificationPipeline<'a>,
     output_buf: Vec<Prediction>,
@@ -86,40 +87,6 @@ impl<'a> SequenceClassificationPipelineFFI<'a> {
             model_id.as_c_str().unwrap().to_string_lossy().to_string(),
             device.into(),
             optimization.into(),
-        )?;
-        Ok(Self {
-            model,
-            output_buf: Vec::new(),
-            output_buf_vec: Vec::new(),
-            class_preds_buf_vec: Vec::new(),
-        })
-    }
-
-    #[ffi_service_ctor]
-    pub fn create_from_memory(
-        env: &'a EnvContainer,
-        model: &'a FFISlice<'a, u8>,
-        tokenizer_config: AsciiPointer<'a>,
-        special_tokens_map: AsciiPointer<'a>,
-        device: DeviceFFI,
-        optimization: GraphOptimizationLevelFFI,
-    ) -> Result<Self> {
-        let model = SequenceClassificationPipeline::new_from_memory(
-            env.env.clone(),
-            model.as_slice(),
-            tokenizer_config
-                .as_c_str()
-                .unwrap()
-                .to_string_lossy()
-                .to_string(),
-            special_tokens_map
-                .as_c_str()
-                .unwrap()
-                .to_string_lossy()
-                .to_string(),
-            device.into(),
-            optimization.into(),
-            None,
         )?;
         Ok(Self {
             model,
