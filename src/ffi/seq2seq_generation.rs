@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::ffi::CString;
 use std::path::Path;
 
@@ -15,7 +14,7 @@ use crate::ffi::{
 use crate::sampling::{ArgmaxSampler, RandomSampler, TopKSampler};
 use crate::Seq2SeqGenerationPipeline;
 
-#[ffi_type(opaque, name = "Seq2SeqGenerationPipeline")]
+#[ffi_type(opaque)]
 pub struct Seq2SeqGenerationPipelineFFI<'a> {
     pub model: Seq2SeqGenerationPipeline<'a>,
     pub output_buf: Vec<String>,
@@ -34,38 +33,6 @@ impl<'a> Seq2SeqGenerationPipelineFFI<'a> {
         let model = Seq2SeqGenerationPipeline::from_pretrained(
             env.env.clone(),
             model_id.as_c_str().unwrap().to_string_lossy().to_string(),
-            device.into(),
-            optimization.into(),
-        )?;
-        Ok(Self {
-            model,
-            output_buf: Vec::new(),
-            output_buf_ffi: Vec::new(),
-        })
-    }
-
-    #[ffi_service_ctor]
-    pub fn create_from_memory(
-        env: &'a EnvContainer,
-        model: &'a FFISlice<'a, u8>,
-        tokenizer_config: AsciiPointer<'a>,
-        special_tokens_map: AsciiPointer<'a>,
-        device: DeviceFFI,
-        optimization: GraphOptimizationLevelFFI,
-    ) -> Result<Self> {
-        let model = Seq2SeqGenerationPipeline::new_from_memory(
-            env.env.clone(),
-            model.as_slice().clone(),
-            tokenizer_config
-                .as_c_str()
-                .unwrap()
-                .to_string_lossy()
-                .to_string(),
-            special_tokens_map
-                .as_c_str()
-                .unwrap()
-                .to_string_lossy()
-                .to_string(),
             device.into(),
             optimization.into(),
         )?;
@@ -110,20 +77,26 @@ impl<'a> Seq2SeqGenerationPipelineFFI<'a> {
     pub fn generate_topk_sampling(
         &mut self,
         input: AsciiPointer,
-        decoder_input: FFIOption<AsciiPointer>,
+        decoder_input: AsciiPointer,
         max_length: i32,
         topk: i32,
         temperature: f32,
     ) -> AsciiPointer<'a> {
         let sampler = TopKSampler::new(topk as usize, temperature);
         let decoder_input = decoder_input
-            .into_option()
-            .map(|s| s.as_c_str().unwrap().to_string_lossy().to_string());
+            .as_c_str()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
+        let decoder_input_option = match decoder_input.as_str() {
+            "" => None,
+            _ => Some(decoder_input.as_str()),
+        };
         let output = self
             .model
             .generate(
                 &*input.as_c_str().unwrap().to_string_lossy(),
-                decoder_input.as_ref().map(|s| &**s),
+                decoder_input_option,
                 max_length,
                 &sampler,
             )
@@ -136,19 +109,25 @@ impl<'a> Seq2SeqGenerationPipelineFFI<'a> {
     pub fn generate_random_sampling(
         &mut self,
         input: AsciiPointer<'a>,
-        decoder_input: FFIOption<AsciiPointer>,
+        decoder_input: AsciiPointer,
         max_length: i32,
         temperature: f32,
     ) -> AsciiPointer<'a> {
         let sampler = RandomSampler::new(temperature);
         let decoder_input = decoder_input
-            .into_option()
-            .map(|s| s.as_c_str().unwrap().to_string_lossy().to_string());
+            .as_c_str()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
+        let decoder_input_option = match decoder_input.as_str() {
+            "" => None,
+            _ => Some(decoder_input.as_str()),
+        };
         let output = self
             .model
             .generate(
                 &*input.as_c_str().unwrap().to_string_lossy(),
-                decoder_input.as_ref().map(|s| &**s),
+                decoder_input_option,
                 max_length,
                 &sampler,
             )
@@ -162,18 +141,24 @@ impl<'a> Seq2SeqGenerationPipelineFFI<'a> {
     pub fn generate_argmax(
         &mut self,
         input: AsciiPointer<'a>,
-        decoder_input: FFIOption<AsciiPointer>,
+        decoder_input: AsciiPointer,
         max_length: i32,
     ) -> AsciiPointer<'a> {
         let sampler = ArgmaxSampler::new();
         let decoder_input = decoder_input
-            .into_option()
-            .map(|s| s.as_c_str().unwrap().to_string_lossy().to_string());
+            .as_c_str()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
+        let decoder_input_option = match decoder_input.as_str() {
+            "" => None,
+            _ => Some(decoder_input.as_str()),
+        };
         let output = self
             .model
             .generate(
                 &*input.as_c_str().unwrap().to_string_lossy(),
-                decoder_input.as_ref().map(|s| &**s),
+                decoder_input_option,
                 max_length,
                 &sampler,
             )
@@ -306,7 +291,7 @@ mod test {
         let output = pipeline.generate_topk_sampling(
             AsciiPointer::from_slice_with_nul(b"translate English to French: How old are you?\0")
                 .unwrap(),
-            FFIOption::none(),
+            AsciiPointer::from_slice_with_nul(b"\0").unwrap(),
             32,
             5,
             1.0,

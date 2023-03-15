@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::ffi::CString;
 use std::path::PathBuf;
 
@@ -8,13 +7,13 @@ use interoptopus::{ffi_service, ffi_service_ctor, ffi_service_method, ffi_type};
 
 use crate::error::Result;
 use crate::ffi::{
-    error::FFIError, DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch,
+    DeviceFFI, EnvContainer, FFIError, GraphOptimizationLevelFFI, StringBatch,
     UseAsciiStringPattern,
 };
 use crate::sampling::{ArgmaxSampler, RandomSampler, TopKSampler};
 use crate::ConditionalGenerationPipeline;
 
-#[ffi_type(opaque, name = "ConditionalGenerationPipeline")]
+#[ffi_type(opaque)]
 pub struct ConditionalGenerationPipelineFFI<'a> {
     pub model: ConditionalGenerationPipeline<'a>,
     pub output_buf: Vec<String>,
@@ -33,38 +32,6 @@ impl<'a> ConditionalGenerationPipelineFFI<'a> {
         let model = ConditionalGenerationPipeline::from_pretrained(
             env.env.clone(),
             model_id.as_c_str().unwrap().to_string_lossy().to_string(),
-            device.into(),
-            optimization.into(),
-        )?;
-        Ok(Self {
-            model,
-            output_buf: Vec::new(),
-            output_buf_ffi: Vec::new(),
-        })
-    }
-
-    #[ffi_service_ctor]
-    pub fn create_from_memory(
-        env: &'a EnvContainer,
-        model: &'a FFISlice<'a, u8>,
-        tokenizer_config: AsciiPointer<'a>,
-        special_tokens_map: AsciiPointer<'a>,
-        device: DeviceFFI,
-        optimization: GraphOptimizationLevelFFI,
-    ) -> Result<Self> {
-        let model = ConditionalGenerationPipeline::new_from_memory(
-            env.env.clone(),
-            model.as_slice(),
-            tokenizer_config
-                .as_c_str()
-                .unwrap()
-                .to_string_lossy()
-                .to_string(),
-            special_tokens_map
-                .as_c_str()
-                .unwrap()
-                .to_string_lossy()
-                .to_string(),
             device.into(),
             optimization.into(),
         )?;

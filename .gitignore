@@ -2,3 +2,10 @@
 /Cargo.lock
 .idea
 tmp_cache
+edge-transformers-csharp/**/.vs
+edge-transformers-csharp/**/obj
+edge-transformers-csharp/**/Backup
+edge-transformers-csharp/**/bin
+edge-transformers-csharp/**/Packages
+edge-transformers-csharp/**/TestResults
+edge-transformers-csharp/**/*.dll

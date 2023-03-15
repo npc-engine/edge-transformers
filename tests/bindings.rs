@@ -28,10 +28,11 @@ fn generate_csharp() -> Result<(), Error> {
     let config = Config {
         class: "Interop".to_string(),
         dll_name: "edge_transformers".to_string(),
-        namespace_mappings: NamespaceMappings::new("EdgeTransformers"),
+        namespace_mappings: NamespaceMappings::new("EdgeTransformers.FFI"),
         ..Config::default()
     };
 
-    Generator::new(config, inventory).write_file("csharp/EdgeTransformers.cs")?;
+    Generator::new(config, inventory)
+        .write_file("edge-transformers-csharp/EdgeTransformers/EdgeTransformersFFI.cs")?;
     Ok(())
 }

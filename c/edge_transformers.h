@@ -34,24 +34,26 @@ typedef enum poolingstrategyffi
     POOLINGSTRATEGYFFI_FIRST = 2,
     } poolingstrategyffi;
 
-typedef struct conditionalgenerationpipeline conditionalgenerationpipeline;
+typedef struct conditionalgenerationpipelineffi conditionalgenerationpipelineffi;
 
-typedef struct conditionalgenerationpipelinewithpkvs conditionalgenerationpipelinewithpkvs;
+typedef struct conditionalgenerationpipelinewithpkvsffi conditionalgenerationpipelinewithpkvsffi;
 
-typedef struct embeddingpipeline embeddingpipeline;
+typedef struct embeddingpipelineffi embeddingpipelineffi;
 
 /// Holds text embedding with model specific threshold for cosine similarity.
-typedef struct environment environment;
+typedef struct envcontainer envcontainer;
 
-typedef struct optimumseq2seqpipeline optimumseq2seqpipeline;
+typedef struct optimumseq2seqpipelineffi optimumseq2seqpipelineffi;
 
-typedef struct optimumseq2seqpipelinewithpkvs optimumseq2seqpipelinewithpkvs;
+typedef struct optimumseq2seqpipelinewithpkvsffi optimumseq2seqpipelinewithpkvsffi;
 
-typedef struct seq2seqgenerationpipeline seq2seqgenerationpipeline;
+typedef struct seq2seqgenerationpipelineffi seq2seqgenerationpipelineffi;
 
-typedef struct sequenceclassificationpipeline sequenceclassificationpipeline;
+typedef struct sequenceclassificationpipelineffi sequenceclassificationpipelineffi;
 
 typedef struct stringbatch stringbatch;
+
+typedef struct tokenclassificationpipelineffi tokenclassificationpipelineffi;
 
 typedef enum ffierror
     {
@@ -73,13 +75,6 @@ typedef struct useasciistringpattern
     } useasciistringpattern;
 
 ///Option type containing boolean flag and maybe valid data.
-typedef struct option*const i8
-    {
-    const char* t;
-    uint8_t is_some;
-    } option*const i8;
-
-///Option type containing boolean flag and maybe valid data.
 typedef struct optionstringbatch
     {
     stringbatch t;
@@ -92,13 +87,6 @@ typedef struct slicef32
     const float* data;
     uint64_t len;
     } slicef32;
-
-///A pointer to an array of data someone else owns which may not be modified.
-typedef struct sliceu8
-    {
-    const uint8_t* data;
-    uint64_t len;
-    } sliceu8;
 
 typedef struct embeddingffi
     {
@@ -125,6 +113,14 @@ typedef struct predictionffi
     sliceclasspredictionffi all;
     } predictionffi;
 
+typedef struct tokenclasspredictionffi
+    {
+    classpredictionffi best;
+    sliceclasspredictionffi all;
+    uint32_t start;
+    uint32_t end;
+    } tokenclasspredictionffi;
+
 ///A pointer to an array of data someone else owns which may not be modified.
 typedef struct sliceembeddingffi
     {
@@ -139,6 +135,26 @@ typedef struct slicepredictionffi
     uint64_t len;
     } slicepredictionffi;
 
+///A pointer to an array of data someone else owns which may not be modified.
+typedef struct slicetokenclasspredictionffi
+    {
+    const tokenclasspredictionffi* data;
+    uint64_t len;
+    } slicetokenclasspredictionffi;
+
+typedef struct taggedstringffi
+    {
+    const char* input_string;
+    slicetokenclasspredictionffi tags;
+    } taggedstringffi;
+
+///A pointer to an array of data someone else owns which may not be modified.
+typedef struct slicetaggedstringffi
+    {
+    const taggedstringffi* data;
+    uint64_t len;
+    } slicetaggedstringffi;
+
 
 /// Destroys the given instance.
 ///
@@ -146,9 +162,9 @@ typedef struct slicepredictionffi
 ///
 /// The passed parameter MUST have been created with the corresponding init function;
 /// passing any other value results in undefined behavior.
-ffierror onnx_env_destroy(environment** context);
+ffierror onnx_env_destroy(envcontainer** context);
 
-ffierror onnx_env_new(environment** context);
+ffierror onnx_env_new(envcontainer** context);
 
 /// Destroys the given instance.
 ///
@@ -174,25 +190,23 @@ ffierror onnx_string_batch_clear(stringbatch* context);
 ///
 /// The passed parameter MUST have been created with the corresponding init function;
 /// passing any other value results in undefined behavior.
-ffierror onnx_cond_gen_destroy(conditionalgenerationpipeline** context);
+ffierror onnx_cond_gen_destroy(conditionalgenerationpipelineffi** context);
 
-ffierror onnx_cond_gen_from_pretrained(conditionalgenerationpipeline** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_cond_gen_from_pretrained(conditionalgenerationpipelineffi** context, const envcontainer* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_cond_gen_create_from_memory(conditionalgenerationpipeline** context, const environment* env, const sliceu8* model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_cond_gen_create_from_files(conditionalgenerationpipelineffi** context, const envcontainer* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_cond_gen_create_from_files(conditionalgenerationpipeline** context, const environment* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
+const char* onnx_cond_gen_generate_topk_sampling(conditionalgenerationpipelineffi* context, const char* input, int32_t max_length, int32_t topk, float temperature);
 
-const char* onnx_cond_gen_generate_topk_sampling(conditionalgenerationpipeline* context, const char* input, int32_t max_length, int32_t topk, float temperature);
+const char* onnx_cond_gen_generate_random_sampling(conditionalgenerationpipelineffi* context, const char* input, int32_t max_length, float temperature);
 
-const char* onnx_cond_gen_generate_random_sampling(conditionalgenerationpipeline* context, const char* input, int32_t max_length, float temperature);
+const char* onnx_cond_gen_generate_argmax(conditionalgenerationpipelineffi* context, const char* input, int32_t max_length);
 
-const char* onnx_cond_gen_generate_argmax(conditionalgenerationpipeline* context, const char* input, int32_t max_length);
+sliceuseasciistringpattern onnx_cond_gen_generate_topk_sampling_batch(conditionalgenerationpipelineffi* s, stringbatch input, int32_t max_length, int32_t topk, float temperature);
 
-sliceuseasciistringpattern onnx_cond_gen_generate_topk_sampling_batch(conditionalgenerationpipeline* s, stringbatch input, int32_t max_length, int32_t topk, float temperature);
+sliceuseasciistringpattern onnx_cond_gen_generate_random_sampling_batch(conditionalgenerationpipelineffi* s, stringbatch input, int32_t max_length, float temperature);
 
-sliceuseasciistringpattern onnx_cond_gen_generate_random_sampling_batch(conditionalgenerationpipeline* s, stringbatch input, int32_t max_length, float temperature);
-
-sliceuseasciistringpattern onnx_cond_gen_generate_argmax_batch(conditionalgenerationpipeline* s, stringbatch input, int32_t max_length);
+sliceuseasciistringpattern onnx_cond_gen_generate_argmax_batch(conditionalgenerationpipelineffi* s, stringbatch input, int32_t max_length);
 
 /// Destroys the given instance.
 ///
@@ -200,25 +214,23 @@ sliceuseasciistringpattern onnx_cond_gen_generate_argmax_batch(conditionalgenera
 ///
 /// The passed parameter MUST have been created with the corresponding init function;
 /// passing any other value results in undefined behavior.
-ffierror onnx_cond_gen_pkvs_destroy(conditionalgenerationpipelinewithpkvs** context);
+ffierror onnx_cond_gen_pkvs_destroy(conditionalgenerationpipelinewithpkvsffi** context);
 
-ffierror onnx_cond_gen_pkvs_from_pretrained(conditionalgenerationpipelinewithpkvs** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_cond_gen_pkvs_from_pretrained(conditionalgenerationpipelinewithpkvsffi** context, const envcontainer* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_cond_gen_pkvs_create_from_memory(conditionalgenerationpipelinewithpkvs** context, const environment* env, const const sliceu8** model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_cond_gen_pkvs_create_from_paths(conditionalgenerationpipelinewithpkvsffi** context, const envcontainer* env, const char* model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_cond_gen_pkvs_create_from_paths(conditionalgenerationpipelinewithpkvs** context, const environment* env, const char* model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
+const char* onnx_cond_gen_pkvs_generate_topk_sampling(conditionalgenerationpipelinewithpkvsffi* context, const char* input, int32_t max_length, int32_t topk, float temperature);
 
-const char* onnx_cond_gen_pkvs_generate_topk_sampling(conditionalgenerationpipelinewithpkvs* context, const char* input, int32_t max_length, int32_t topk, float temperature);
+const char* onnx_cond_gen_pkvs_generate_random_sampling(conditionalgenerationpipelinewithpkvsffi* context, const char* input, int32_t max_length, float temperature);
 
-const char* onnx_cond_gen_pkvs_generate_random_sampling(conditionalgenerationpipelinewithpkvs* context, const char* input, int32_t max_length, float temperature);
+const char* onnx_cond_gen_pkvs_generate_argmax(conditionalgenerationpipelinewithpkvsffi* context, const char* input, int32_t max_length);
 
-const char* onnx_cond_gen_pkvs_generate_argmax(conditionalgenerationpipelinewithpkvs* context, const char* input, int32_t max_length);
+sliceuseasciistringpattern onnx_cond_gen_pkvs_generate_topk_sampling_batch(conditionalgenerationpipelinewithpkvsffi* s, stringbatch input, int32_t max_length, int32_t topk, float temperature);
 
-sliceuseasciistringpattern onnx_cond_gen_pkvs_generate_topk_sampling_batch(conditionalgenerationpipelinewithpkvs* s, stringbatch input, int32_t max_length, int32_t topk, float temperature);
+sliceuseasciistringpattern onnx_cond_gen_pkvs_generate_random_sampling_batch(conditionalgenerationpipelinewithpkvsffi* s, stringbatch input, int32_t max_length, float temperature);
 
-sliceuseasciistringpattern onnx_cond_gen_pkvs_generate_random_sampling_batch(conditionalgenerationpipelinewithpkvs* s, stringbatch input, int32_t max_length, float temperature);
-
-sliceuseasciistringpattern onnx_cond_gen_pkvs_generate_argmax_batch(conditionalgenerationpipelinewithpkvs* s, stringbatch input, int32_t max_length);
+sliceuseasciistringpattern onnx_cond_gen_pkvs_generate_argmax_batch(conditionalgenerationpipelinewithpkvsffi* s, stringbatch input, int32_t max_length);
 
 /// Destroys the given instance.
 ///
@@ -226,17 +238,15 @@ sliceuseasciistringpattern onnx_cond_gen_pkvs_generate_argmax_batch(conditionalg
 ///
 /// The passed parameter MUST have been created with the corresponding init function;
 /// passing any other value results in undefined behavior.
-ffierror onnx_emb_destroy(embeddingpipeline** context);
+ffierror onnx_emb_destroy(embeddingpipelineffi** context);
 
-ffierror onnx_emb_from_pretrained(embeddingpipeline** context, const environment* env, const char* model_id, poolingstrategyffi pooling_strategy, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_emb_from_pretrained(embeddingpipelineffi** context, const envcontainer* env, const char* model_id, poolingstrategyffi pooling_strategy, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_emb_create_from_memory(embeddingpipeline** context, const environment* env, const const sliceu8** model, const char* tokenizer_config, const char* special_tokens_map, poolingstrategyffi pooling_strategy, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_emb_create_from_files(embeddingpipelineffi** context, const envcontainer* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, poolingstrategyffi pooling_strategy, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_emb_create_from_files(embeddingpipeline** context, const environment* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, poolingstrategyffi pooling_strategy, deviceffi device, graphoptimizationlevelffi optimization);
+embeddingffi onnx_emb_embed(embeddingpipelineffi* s, const char* input);
 
-embeddingffi onnx_emb_embed(embeddingpipeline* s, const char* input);
-
-sliceembeddingffi onnx_emb_embed_batch(embeddingpipeline* s, stringbatch input);
+sliceembeddingffi onnx_emb_embed_batch(embeddingpipelineffi* s, stringbatch input);
 
 /// Destroys the given instance.
 ///
@@ -244,17 +254,15 @@ sliceembeddingffi onnx_emb_embed_batch(embeddingpipeline* s, stringbatch input);
 ///
 /// The passed parameter MUST have been created with the corresponding init function;
 /// passing any other value results in undefined behavior.
-ffierror onnx_classification_destroy(sequenceclassificationpipeline** context);
+ffierror onnx_token_classification_destroy(tokenclassificationpipelineffi** context);
 
-ffierror onnx_classification_from_pretrained(sequenceclassificationpipeline** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_token_classification_from_pretrained(tokenclassificationpipelineffi** context, const envcontainer* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_classification_create_from_memory(sequenceclassificationpipeline** context, const environment* env, const sliceu8* model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_token_classification_create_from_files(tokenclassificationpipelineffi** context, const envcontainer* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_classification_create_from_files(sequenceclassificationpipeline** context, const environment* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
+taggedstringffi onnx_token_classification_tag(tokenclassificationpipelineffi* s, const char* input);
 
-predictionffi onnx_classification_classify(sequenceclassificationpipeline* s, const char* input);
-
-slicepredictionffi onnx_classification_classify_batch(sequenceclassificationpipeline* s, stringbatch input);
+slicetaggedstringffi onnx_token_classification_tag_batch(tokenclassificationpipelineffi* s, stringbatch input);
 
 /// Destroys the given instance.
 ///
@@ -262,25 +270,15 @@ slicepredictionffi onnx_classification_classify_batch(sequenceclassificationpipe
 ///
 /// The passed parameter MUST have been created with the corresponding init function;
 /// passing any other value results in undefined behavior.
-ffierror onnx_optimum_seq2seq_destroy(optimumseq2seqpipeline** context);
+ffierror onnx_classification_destroy(sequenceclassificationpipelineffi** context);
 
-ffierror onnx_optimum_seq2seq_from_pretrained(optimumseq2seqpipeline** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_classification_from_pretrained(sequenceclassificationpipelineffi** context, const envcontainer* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_optimum_seq2seq_create_from_memory(optimumseq2seqpipeline** context, const environment* env, const sliceu8* encoder_model, const sliceu8* decoder_model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_classification_create_from_files(sequenceclassificationpipelineffi** context, const envcontainer* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_optimum_seq2seq_create_from_files(optimumseq2seqpipeline** context, const environment* env, const char* encoder_model_path, const char* decoder_model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
+predictionffi onnx_classification_classify(sequenceclassificationpipelineffi* s, const char* input);
 
-const char* onnx_optimum_seq2seq_generate_topk_sampling(optimumseq2seqpipeline* context, const char* input, option*const i8 decoder_input, int32_t max_length, int32_t topk, float temperature);
-
-const char* onnx_optimum_seq2seq_generate_random_sampling(optimumseq2seqpipeline* context, const char* input, option*const i8 decoder_input, int32_t max_length, float temperature);
-
-const char* onnx_optimum_seq2seq_generate_argmax(optimumseq2seqpipeline* context, const char* input, option*const i8 decoder_input, int32_t max_length);
-
-sliceuseasciistringpattern onnx_optimum_seq2seq_generate_topk_sampling_batch(optimumseq2seqpipeline* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length, int32_t topk, float temperature);
-
-sliceuseasciistringpattern onnx_optimum_seq2seq_generate_random_sampling_batch(optimumseq2seqpipeline* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length, float temperature);
-
-sliceuseasciistringpattern onnx_optimum_seq2seq_generate_argmax_batch(optimumseq2seqpipeline* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length);
+slicepredictionffi onnx_classification_classify_batch(sequenceclassificationpipelineffi* s, stringbatch input);
 
 /// Destroys the given instance.
 ///
@@ -288,25 +286,23 @@ sliceuseasciistringpattern onnx_optimum_seq2seq_generate_argmax_batch(optimumseq
 ///
 /// The passed parameter MUST have been created with the corresponding init function;
 /// passing any other value results in undefined behavior.
-ffierror onnx_optimum_seq2seq_pkvs_destroy(optimumseq2seqpipelinewithpkvs** context);
+ffierror onnx_optimum_seq2seq_destroy(optimumseq2seqpipelineffi** context);
 
-ffierror onnx_optimum_seq2seq_pkvs_from_pretrained(optimumseq2seqpipelinewithpkvs** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_optimum_seq2seq_from_pretrained(optimumseq2seqpipelineffi** context, const envcontainer* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_optimum_seq2seq_pkvs_create_from_memory(optimumseq2seqpipelinewithpkvs** context, const environment* env, const sliceu8* encoder_model, const sliceu8* decoder_model, const sliceu8* decoder_model_pkvs, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization_level);
+ffierror onnx_optimum_seq2seq_create_from_files(optimumseq2seqpipelineffi** context, const envcontainer* env, const char* encoder_model_path, const char* decoder_model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_optimum_seq2seq_pkvs_create_from_files(optimumseq2seqpipelinewithpkvs** context, const environment* env, const char* encoder_model_path, const char* decoder_model_path, const char* decoder_model_pkvs_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization_level);
+const char* onnx_optimum_seq2seq_generate_topk_sampling(optimumseq2seqpipelineffi* context, const char* input, const char* decoder_input, int32_t max_length, int32_t topk, float temperature);
 
-const char* onnx_optimum_seq2seq_pkvs_generate_topk_sampling(optimumseq2seqpipelinewithpkvs* context, const char* input, option*const i8 decoder_input, int32_t max_length, int32_t topk, float temperature);
+const char* onnx_optimum_seq2seq_generate_random_sampling(optimumseq2seqpipelineffi* context, const char* input, const char* decoder_input, int32_t max_length, float temperature);
 
-const char* onnx_optimum_seq2seq_pkvs_generate_random_sampling(optimumseq2seqpipelinewithpkvs* context, const char* input, option*const i8 decoder_input, int32_t max_length, float temperature);
+const char* onnx_optimum_seq2seq_generate_argmax(optimumseq2seqpipelineffi* context, const char* input, const char* decoder_input, int32_t max_length);
 
-const char* onnx_optimum_seq2seq_pkvs_generate_argmax(optimumseq2seqpipelinewithpkvs* context, const char* input, option*const i8 decoder_input, int32_t max_length);
+sliceuseasciistringpattern onnx_optimum_seq2seq_generate_topk_sampling_batch(optimumseq2seqpipelineffi* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length, int32_t topk, float temperature);
 
-sliceuseasciistringpattern onnx_optimum_seq2seq_pkvs_generate_topk_sampling_batch(optimumseq2seqpipelinewithpkvs* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length, int32_t topk, float temperature);
+sliceuseasciistringpattern onnx_optimum_seq2seq_generate_random_sampling_batch(optimumseq2seqpipelineffi* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length, float temperature);
 
-sliceuseasciistringpattern onnx_optimum_seq2seq_pkvs_generate_random_sampling_batch(optimumseq2seqpipelinewithpkvs* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length, float temperature);
-
-sliceuseasciistringpattern onnx_optimum_seq2seq_pkvs_generate_argmax_batch(optimumseq2seqpipelinewithpkvs* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length);
+sliceuseasciistringpattern onnx_optimum_seq2seq_generate_argmax_batch(optimumseq2seqpipelineffi* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length);
 
 /// Destroys the given instance.
 ///
@@ -314,25 +310,47 @@ sliceuseasciistringpattern onnx_optimum_seq2seq_pkvs_generate_argmax_batch(optim
 ///
 /// The passed parameter MUST have been created with the corresponding init function;
 /// passing any other value results in undefined behavior.
-ffierror onnx_seq2seq_destroy(seq2seqgenerationpipeline** context);
+ffierror onnx_optimum_seq2seq_pkvs_destroy(optimumseq2seqpipelinewithpkvsffi** context);
 
-ffierror onnx_seq2seq_from_pretrained(seq2seqgenerationpipeline** context, const environment* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_optimum_seq2seq_pkvs_from_pretrained(optimumseq2seqpipelinewithpkvsffi** context, const envcontainer* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
 
-ffierror onnx_seq2seq_create_from_memory(seq2seqgenerationpipeline** context, const environment* env, const sliceu8* model, const char* tokenizer_config, const char* special_tokens_map, deviceffi device, graphoptimizationlevelffi optimization);
+ffierror onnx_optimum_seq2seq_pkvs_create_from_files(optimumseq2seqpipelinewithpkvsffi** context, const envcontainer* env, const char* encoder_model_path, const char* decoder_model_path, const char* decoder_model_pkvs_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization_level);
 
-ffierror onnx_seq2seq_create_from_files(seq2seqgenerationpipeline** context, const environment* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
+const char* onnx_optimum_seq2seq_pkvs_generate_topk_sampling(optimumseq2seqpipelinewithpkvsffi* context, const char* input, const char* decoder_input, int32_t max_length, int32_t topk, float temperature);
 
-const char* onnx_seq2seq_generate_topk_sampling(seq2seqgenerationpipeline* context, const char* input, option*const i8 decoder_input, int32_t max_length, int32_t topk, float temperature);
+const char* onnx_optimum_seq2seq_pkvs_generate_random_sampling(optimumseq2seqpipelinewithpkvsffi* context, const char* input, const char* decoder_input, int32_t max_length, float temperature);
 
-const char* onnx_seq2seq_generate_random_sampling(seq2seqgenerationpipeline* context, const char* input, option*const i8 decoder_input, int32_t max_length, float temperature);
+const char* onnx_optimum_seq2seq_pkvs_generate_argmax(optimumseq2seqpipelinewithpkvsffi* context, const char* input, const char* decoder_input, int32_t max_length);
 
-const char* onnx_seq2seq_generate_argmax(seq2seqgenerationpipeline* context, const char* input, option*const i8 decoder_input, int32_t max_length);
+sliceuseasciistringpattern onnx_optimum_seq2seq_pkvs_generate_topk_sampling_batch(optimumseq2seqpipelinewithpkvsffi* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length, int32_t topk, float temperature);
 
-sliceuseasciistringpattern onnx_seq2seq_generate_topk_sampling_batch(seq2seqgenerationpipeline* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length, int32_t topk, float temperature);
+sliceuseasciistringpattern onnx_optimum_seq2seq_pkvs_generate_random_sampling_batch(optimumseq2seqpipelinewithpkvsffi* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length, float temperature);
 
-sliceuseasciistringpattern onnx_seq2seq_generate_random_sampling_batch(seq2seqgenerationpipeline* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length, float temperature);
+sliceuseasciistringpattern onnx_optimum_seq2seq_pkvs_generate_argmax_batch(optimumseq2seqpipelinewithpkvsffi* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length);
 
-sliceuseasciistringpattern onnx_seq2seq_generate_argmax_batch(seq2seqgenerationpipeline* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length);
+/// Destroys the given instance.
+///
+/// # Safety
+///
+/// The passed parameter MUST have been created with the corresponding init function;
+/// passing any other value results in undefined behavior.
+ffierror onnx_seq2seq_destroy(seq2seqgenerationpipelineffi** context);
+
+ffierror onnx_seq2seq_from_pretrained(seq2seqgenerationpipelineffi** context, const envcontainer* env, const char* model_id, deviceffi device, graphoptimizationlevelffi optimization);
+
+ffierror onnx_seq2seq_create_from_files(seq2seqgenerationpipelineffi** context, const envcontainer* env, const char* model_path, const char* tokenizer_config_path, const char* special_tokens_map_path, deviceffi device, graphoptimizationlevelffi optimization);
+
+const char* onnx_seq2seq_generate_topk_sampling(seq2seqgenerationpipelineffi* context, const char* input, const char* decoder_input, int32_t max_length, int32_t topk, float temperature);
+
+const char* onnx_seq2seq_generate_random_sampling(seq2seqgenerationpipelineffi* context, const char* input, const char* decoder_input, int32_t max_length, float temperature);
+
+const char* onnx_seq2seq_generate_argmax(seq2seqgenerationpipelineffi* context, const char* input, const char* decoder_input, int32_t max_length);
+
+sliceuseasciistringpattern onnx_seq2seq_generate_topk_sampling_batch(seq2seqgenerationpipelineffi* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length, int32_t topk, float temperature);
+
+sliceuseasciistringpattern onnx_seq2seq_generate_random_sampling_batch(seq2seqgenerationpipelineffi* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length, float temperature);
+
+sliceuseasciistringpattern onnx_seq2seq_generate_argmax_batch(seq2seqgenerationpipelineffi* s, stringbatch input, optionstringbatch decoder_input, int32_t max_length);
 
 
 #ifdef __cplusplus
