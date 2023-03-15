@@ -87,7 +87,11 @@ impl<'a> OptimumSeq2SeqPipelineFFI<'a> {
         temperature: f32,
     ) -> AsciiPointer<'a> {
         let sampler = TopKSampler::new(topk as usize, temperature);
-        let decoder_input = decoder_input.as_c_str().unwrap().to_string_lossy().to_string();
+        let decoder_input = decoder_input
+            .as_c_str()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
         let decoder_input_option = match decoder_input.as_str() {
             "" => None,
             _ => Some(decoder_input.as_str()),
@@ -114,7 +118,11 @@ impl<'a> OptimumSeq2SeqPipelineFFI<'a> {
         temperature: f32,
     ) -> AsciiPointer<'a> {
         let sampler = RandomSampler::new(temperature);
-        let decoder_input = decoder_input.as_c_str().unwrap().to_string_lossy().to_string();
+        let decoder_input = decoder_input
+            .as_c_str()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
         let decoder_input_option = match decoder_input.as_str() {
             "" => None,
             _ => Some(decoder_input.as_str()),
@@ -142,7 +150,11 @@ impl<'a> OptimumSeq2SeqPipelineFFI<'a> {
     ) -> AsciiPointer<'a> {
         let sampler = ArgmaxSampler::new();
 
-        let decoder_input = decoder_input.as_c_str().unwrap().to_string_lossy().to_string();
+        let decoder_input = decoder_input
+            .as_c_str()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
         let decoder_input_option = match decoder_input.as_str() {
             "" => None,
             _ => Some(decoder_input.as_str()),

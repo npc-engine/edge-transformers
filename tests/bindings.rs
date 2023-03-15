@@ -32,6 +32,7 @@ fn generate_csharp() -> Result<(), Error> {
         ..Config::default()
     };
 
-    Generator::new(config, inventory).write_file("edge-transformers-csharp/EdgeTransformers/EdgeTransformersFFI.cs")?;
+    Generator::new(config, inventory)
+        .write_file("edge-transformers-csharp/EdgeTransformers/EdgeTransformersFFI.cs")?;
     Ok(())
 }

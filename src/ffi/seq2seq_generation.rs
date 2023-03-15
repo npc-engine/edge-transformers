@@ -85,7 +85,11 @@ impl<'a> Seq2SeqGenerationPipelineFFI<'a> {
         temperature: f32,
     ) -> AsciiPointer<'a> {
         let sampler = TopKSampler::new(topk as usize, temperature);
-        let decoder_input = decoder_input.as_c_str().unwrap().to_string_lossy().to_string();
+        let decoder_input = decoder_input
+            .as_c_str()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
         let decoder_input_option = match decoder_input.as_str() {
             "" => None,
             _ => Some(decoder_input.as_str()),
@@ -112,7 +116,11 @@ impl<'a> Seq2SeqGenerationPipelineFFI<'a> {
         temperature: f32,
     ) -> AsciiPointer<'a> {
         let sampler = RandomSampler::new(temperature);
-        let decoder_input = decoder_input.as_c_str().unwrap().to_string_lossy().to_string();
+        let decoder_input = decoder_input
+            .as_c_str()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
         let decoder_input_option = match decoder_input.as_str() {
             "" => None,
             _ => Some(decoder_input.as_str()),
@@ -139,7 +147,11 @@ impl<'a> Seq2SeqGenerationPipelineFFI<'a> {
         max_length: i32,
     ) -> AsciiPointer<'a> {
         let sampler = ArgmaxSampler::new();
-        let decoder_input = decoder_input.as_c_str().unwrap().to_string_lossy().to_string();
+        let decoder_input = decoder_input
+            .as_c_str()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
         let decoder_input_option = match decoder_input.as_str() {
             "" => None,
             _ => Some(decoder_input.as_str()),
@@ -281,8 +293,7 @@ mod test {
         let output = pipeline.generate_topk_sampling(
             AsciiPointer::from_slice_with_nul(b"translate English to French: How old are you?\0")
                 .unwrap(),
-            AsciiPointer::from_slice_with_nul(b"\0")
-                .unwrap(),
+            AsciiPointer::from_slice_with_nul(b"\0").unwrap(),
             32,
             5,
             1.0,
