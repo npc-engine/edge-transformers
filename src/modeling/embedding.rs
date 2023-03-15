@@ -1,5 +1,4 @@
 use half::{bf16, f16};
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -7,7 +6,7 @@ use std::sync::Arc;
 use ndarray::{Array, Array1, Array2, Axis, IxDyn};
 use ort::environment::Environment;
 use ort::tensor::{FromArray, InputTensor, TensorElementDataType};
-use ort::{GraphOptimizationLevel, InMemorySession, Session, SessionBuilder};
+use ort::{GraphOptimizationLevel, SessionBuilder};
 
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};

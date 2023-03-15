@@ -1,13 +1,11 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use ndarray::{Array, Array2, Array3, IxDyn};
 use ort::environment::Environment;
-use ort::session::Session;
 use ort::tensor::{FromArray, InputTensor};
-use ort::{GraphOptimizationLevel, InMemorySession, SessionBuilder};
+use ort::{GraphOptimizationLevel, SessionBuilder};
 
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
@@ -52,7 +50,8 @@ impl<'a> Seq2SeqEncoderModel<'a> {
         device: Device,
         optimization_level: GraphOptimizationLevel,
     ) -> Result<Self> {
-        let mut session_builder = SessionBuilder::new(&env)?;
+        let session_builder = SessionBuilder::new(&env)?;
+        let session_builder = apply_device(session_builder, device)?;
         let session = session_builder
             .with_optimization_level(optimization_level)?
             .with_model_from_file(model_path)?;
@@ -83,7 +82,7 @@ impl<'a> Seq2SeqEncoderModel<'a> {
         token_type_ids: Option<Array2<u32>>,
     ) -> Result<Array3<f32>> {
         let input_map = self.prepare_input_map(input_ids, attention_mask, token_type_ids)?;
-        let mut model = match &self.model_session {
+        let model = match &self.model_session {
             ORTSession::Owned(m) => m,
             ORTSession::InMemory(m) => m,
         };

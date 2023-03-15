@@ -1,8 +1,5 @@
-use std::borrow::Borrow;
-use std::cell::RefCell;
 use std::ffi::CString;
 use std::path::PathBuf;
-use std::rc::Rc;
 
 use interoptopus::patterns::slice::FFISlice;
 use interoptopus::patterns::string::AsciiPointer;

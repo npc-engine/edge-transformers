@@ -1,4 +1,3 @@
-use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -6,7 +5,7 @@ use std::sync::Arc;
 use ndarray::{Array2, ArrayD, Axis, IxDyn};
 use ort::environment::Environment;
 use ort::tensor::{FromArray, InputTensor};
-use ort::{GraphOptimizationLevel, InMemorySession, Session, SessionBuilder};
+use ort::{GraphOptimizationLevel, SessionBuilder};
 
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};

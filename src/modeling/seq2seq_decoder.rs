@@ -1,13 +1,12 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use ndarray::{Array, Array2, Array3, IxDyn};
 use ort::environment::Environment;
-use ort::session::{Input, Output, Session};
+use ort::session::{Input, Output};
 use ort::tensor::{FromArray, InputTensor};
-use ort::{GraphOptimizationLevel, InMemorySession, SessionBuilder};
+use ort::{GraphOptimizationLevel, SessionBuilder};
 
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
@@ -110,7 +109,7 @@ impl<'a> Seq2SeqDecoderModel<'a> {
     ) -> Result<Array3<f32>> {
         let input_map =
             self.prepare_input_map(input_ids, encoder_last_hidden_state, encoder_attention_mask)?;
-        let mut model = match &self.model_session {
+        let model = match &self.model_session {
             ORTSession::Owned(model) => model,
             ORTSession::InMemory(model) => model,
         };

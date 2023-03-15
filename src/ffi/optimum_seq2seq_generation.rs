@@ -1,7 +1,5 @@
-use std::borrow::Borrow;
 use std::ffi::CString;
 use std::path::Path;
-use std::rc::Rc;
 
 use interoptopus::patterns::option::FFIOption;
 use interoptopus::patterns::slice::FFISlice;

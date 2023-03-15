@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -7,7 +6,7 @@ use ndarray::{Array, Array2, Array3, IxDyn};
 use ort::environment::Environment;
 use ort::session::{Input, Output};
 use ort::tensor::{FromArray, InputTensor};
-use ort::{GraphOptimizationLevel, InMemorySession, Session, SessionBuilder};
+use ort::{GraphOptimizationLevel, SessionBuilder};
 
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
@@ -153,7 +152,7 @@ impl<'a> Seq2SeqGenerationModel<'a> {
             token_type_ids,
             decoder_token_type_ids,
         )?;
-        let mut model = match self.model_session {
+        let model = match self.model_session {
             ORTSession::Owned(ref model) => model,
             ORTSession::InMemory(ref model) => model,
         };

@@ -1,15 +1,11 @@
-use std::borrow::Borrow;
 use std::path::Path;
-use std::rc::Rc;
 
 use interoptopus::patterns::slice::FFISlice;
 use interoptopus::patterns::string::AsciiPointer;
 use interoptopus::{ffi_service, ffi_service_ctor, ffi_service_method, ffi_type};
 
 use crate::error::Result;
-use crate::ffi::{
-    error::FFIError, DeviceFFI, EnvContainer, GraphOptimizationLevelFFI, StringBatch,
-};
+use crate::ffi::{DeviceFFI, EnvContainer, FFIError, GraphOptimizationLevelFFI, StringBatch};
 use crate::{Embedding, EmbeddingPipeline, PoolingStrategy};
 
 #[repr(C)]

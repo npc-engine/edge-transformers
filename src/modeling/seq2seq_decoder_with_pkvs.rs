@@ -1,13 +1,12 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use ndarray::{Array, Array2, Array3, ArrayD, IxDyn};
 use ort::environment::Environment;
-use ort::session::{Input, Output, Session};
+use ort::session::{Input, Output};
 use ort::tensor::{FromArray, InputTensor};
-use ort::{GraphOptimizationLevel, InMemorySession, SessionBuilder};
+use ort::{GraphOptimizationLevel, SessionBuilder};
 
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
@@ -152,7 +151,7 @@ impl<'a> Seq2SeqDecoderModelWithPKVs<'a> {
             encoder_attention_mask,
             past_key_values,
         )?;
-        let mut session = if use_pkvs {
+        let session = if use_pkvs {
             match &self.model_session_with_pkvs {
                 ORTSession::InMemory(session) => session,
                 ORTSession::Owned(session) => session,
