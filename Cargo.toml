@@ -2,7 +2,16 @@
 name = "edge-transformers"
 version = "0.1.0"
 edition = "2021"
-
+description = "A Rust wrapper over ONNXRuntime that implements Huggingface's Optimum pipelines for inference and generates bindings for C# and C."
+license = "MIT"
+repository = "https://github.com/npc-engine/edge-transformers"
+readme = "README.md"
+keywords = [ "machine-learning", "ai", "ml", "nlp" ]
+categories = [ "algorithms", "mathematics", "science" ]
+authors = [
+    "NPC Engine <hello@npc-engine.com>",
+    "Mykyta Makarov <mykytamakarov@gmail.com>"
+]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 crate-type = ["cdylib", "rlib"]
