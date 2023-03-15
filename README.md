@@ -41,11 +41,13 @@ Documentation is WIP, refer to Rust documentation for now.
 using EdgeTransformers;
 
 ...
-    var env = EdgeTransformers.Environment.New();
-    var condPipelinePkv = ConditionalGenerationPipelineWithPKVs.FromPretrained(
-        env.Context, "optimum/gpt2", DeviceFFI.DML, GraphOptimizationLevelFFI.All);
+        var env = EnvContainer.New();
 
-    string output = condPipelinePkv.GenerateTopkSampling("Hello world", 10, 5, 0.5f);
+        var conditionalGen = ConditionalGenerationPipelineFFI.FromPretrained(
+            env.Context, "optimum/gpt2", DeviceFFI.CPU, GraphOptimizationLevelFFI.Level3
+        );
+        var outp = conditionalGen.GenerateTopkSampling("Hello", 2, 50, 0.9f);
+        Assert.IsNotNull(outp);
 ...
 ```
 
@@ -54,8 +56,8 @@ Batch processing is supported, but is a bit unintuitive and requires StringBatch
 ```csharp
 using EdgeTransformers;
   ...
-        var env = EdgeTransformers.Environment.New();
-        var condPipelinePkv = ConditionalGenerationPipelineWithPKVs.FromPretrained(
+        var env = EnvContainer.New();
+        var condPipelinePkv = ConditionalGenerationPipelineFFI.FromPretrained(
             env.Context, "optimum/gpt2", DeviceFFI.DML, GraphOptimizationLevelFFI.All);
         var string_batch = StringBatch.New();
         string_batch.Add("Hello world");
