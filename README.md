@@ -78,8 +78,8 @@ TODO
 
 ```csharp
 use std::fs;
-use onnxruntime::environment::Environment;
-use onnxruntime::{GraphOptimizationLevel, LoggingLevel};
+use ort::environment::Environment;
+use ort::{GraphOptimizationLevel, LoggingLevel};
 use edge_transformers::{ConditionalGenerationPipelineWithPKVs, TopKSampler, Device};
 
 let environment = Environment::builder()
@@ -87,13 +87,12 @@ let environment = Environment::builder()
    .with_log_level(LoggingLevel::Verbose)
    .build()
    .unwrap();
-
 let sampler = TopKSampler::new(50, 0.9);
 let pipeline = ConditionalGenerationPipelineWithPKVs::from_pretrained(
-    &environment,
+    environment.into_arc(),
     "optimum/gpt2".to_string(),
     Device::CPU,
-    GraphOptimizationLevel::All,
+    GraphOptimizationLevel::Level3,
 ).unwrap();
 
 let input = "This is a test";
