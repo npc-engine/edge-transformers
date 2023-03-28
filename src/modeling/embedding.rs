@@ -33,13 +33,13 @@ pub struct Embedding {
 
 impl<'a> EmbeddingModel<'a> {
     pub fn new_from_memory(
-        env: &'a Arc<Environment>,
+        env: Arc<Environment>,
         model_bytes: &'a [u8],
         pooling: PoolingStrategy,
         device: Device,
         optimization_level: GraphOptimizationLevel,
     ) -> Result<Self> {
-        let mut session_builder = SessionBuilder::new(env)?;
+        let mut session_builder = SessionBuilder::new(&env)?;
 
         session_builder = apply_device(session_builder, device)?;
         let session = session_builder
