@@ -96,7 +96,7 @@ impl<'a> ConditionalGenerationPipelineWithPKVs<'a> {
     }
 
     pub fn new_from_memory(
-        environment: &'a Arc<Environment>,
+        environment: Arc<Environment>,
         model: &'a [u8],
         tokenizer_config: String,
         special_tokens_map: String,
