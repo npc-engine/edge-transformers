@@ -1,6 +1,6 @@
 [package]
 name = "edge-transformers"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "A Rust wrapper over ONNXRuntime that implements Huggingface's Optimum pipelines for inference and generates bindings for C# and C."
 license = "MIT"
