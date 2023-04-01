@@ -10,7 +10,7 @@ use ort::{GraphOptimizationLevel, SessionBuilder};
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
 use crate::error::Result;
-use crate::ORTSession;
+use crate::{try_extract_to_f32, ORTSession};
 
 /// Onnx inference session wrapper for the conditional generation models.
 pub struct Seq2SeqEncoderModel<'a> {
@@ -99,7 +99,7 @@ impl<'a> Seq2SeqEncoderModel<'a> {
             .zip(
                 outputs_tensors
                     .into_iter()
-                    .map(|tensor| tensor.try_extract().unwrap().view().to_owned()),
+                    .map(|tensor| try_extract_to_f32(tensor).unwrap().view().to_owned()),
             )
             .collect();
         Ok(output_map

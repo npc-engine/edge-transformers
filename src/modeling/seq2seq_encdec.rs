@@ -11,7 +11,7 @@ use ort::{GraphOptimizationLevel, SessionBuilder};
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
 use crate::error::{Error, Result};
-use crate::ORTSession;
+use crate::{try_extract_to_f32, ORTSession};
 
 /// Onnx inference session wrapper for the Seq2Seq generation models.
 pub struct Seq2SeqGenerationModel<'a> {
@@ -170,7 +170,7 @@ impl<'a> Seq2SeqGenerationModel<'a> {
             .zip(
                 output_vec
                     .into_iter()
-                    .map(|tensor| tensor.try_extract().unwrap().view().to_owned()),
+                    .map(|tensor| try_extract_to_f32(tensor).unwrap().view().to_owned()),
             )
             .collect();
 

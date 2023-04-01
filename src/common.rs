@@ -2,8 +2,9 @@ use std::collections::HashMap;
 
 use crate::{Error, Result};
 use half::{bf16, f16};
+use ndarray::{Array, IxDyn};
 use ort::session::{Input, SessionBuilder};
-use ort::tensor::{FromArray, InputTensor, TensorElementDataType};
+use ort::tensor::{DynOrtTensor, FromArray, InputTensor, TensorElementDataType};
 use ort::{ExecutionProvider, GraphOptimizationLevel};
 
 pub enum ORTSession<'a> {
@@ -255,4 +256,26 @@ pub fn clone(opt_level: &GraphOptimizationLevel) -> GraphOptimizationLevel {
         GraphOptimizationLevel::Level2 => GraphOptimizationLevel::Level2,
         GraphOptimizationLevel::Level3 => GraphOptimizationLevel::Level3,
     }
+}
+
+pub fn try_extract_to_f32(tensor: DynOrtTensor<IxDyn>) -> Result<Array<f32, IxDyn>> {
+    Ok(match tensor.data_type() {
+        TensorElementDataType::Float16 => tensor
+            .try_extract::<f16>()?
+            .view()
+            .to_owned()
+            .mapv(|v| v.to_f32()),
+        TensorElementDataType::Float32 => tensor.try_extract::<f32>()?.view().to_owned(),
+        TensorElementDataType::Float64 => tensor
+            .try_extract::<f64>()?
+            .view()
+            .to_owned()
+            .mapv(|v| v as f32),
+        TensorElementDataType::Bfloat16 => tensor
+            .try_extract::<bf16>()?
+            .view()
+            .to_owned()
+            .mapv(|v| v.to_f32()),
+        _ => return Err(format!("Unsupported output data type {:?}", tensor.data_type()).into()),
+    })
 }
