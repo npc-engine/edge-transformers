@@ -11,7 +11,7 @@ use ort::{GraphOptimizationLevel, SessionBuilder};
 use crate::common::Device;
 use crate::common::{apply_device, match_to_inputs};
 use crate::error::{Error, Result};
-use crate::ORTSession;
+use crate::{try_extract_to_f32, ORTSession};
 
 /// Onnx inference session wrapper for the conditional generation models.
 ///
@@ -123,7 +123,7 @@ impl<'a> Seq2SeqDecoderModel<'a> {
 
         let mut output_map = HashMap::new();
         for (name, tensor) in output_names.iter().zip(output_vec) {
-            let extracted = tensor.try_extract()?;
+            let extracted = try_extract_to_f32(tensor)?;
             let view = extracted.view();
             let owned = view.to_owned();
             let dimensionality = owned.into_dimensionality::<IxDyn>()?;
